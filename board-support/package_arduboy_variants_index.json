@@ -18,7 +18,7 @@
           "help": {
             "online": "http://community.arduboy.com/"
           },
-          "url": https://raw.githubusercontent.com/MrBlinky/Arduboy/master/board-support/arduboy-variants-1.0.0.zip",
+          "url": "https://raw.githubusercontent.com/MrBlinky/Arduboy/master/board-support/arduboy-variants-1.0.0.zip",
           "archiveFileName": "arduboy-variants-1.0.0.zip",
           "checksum": "",
           "size": "",
