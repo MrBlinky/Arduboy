@@ -1,4 +1,4 @@
-# Arbudoy and D.I.Y variants board surport
+# Arduboy and D.I.Y variants board surport
 
 By adding this package to the Arduino IDE (1.8+) you can easly build games for different Arduboy variants by selecting the Arduboy board and
 variant from the tools menu. This package also contains the most popular Arduboy libraries so there's no need to install them manually.
