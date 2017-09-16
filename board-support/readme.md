@@ -10,12 +10,14 @@ variant from the tools menu. This package also contains the most popular Arduboy
 
 ## Installation Instructions
 
-To install the Arduboy variants package, start Arduino and open the Preferences window (File > Preferences) then
-copy and paste the following URL into the 'Additional Boards Manager URLs' input field:
+To install the Arduboy variants package, start Arduino and open the Preferences window (**File > Preferences**) then
+copy and paste the following URL into the **Additional Boards Manager URLs** input field:
 
 https://raw.githubusercontent.com/MrBlinky/Arduboy/master/board-support/package_arduboy_variants_index.json
 
 Note if you already have board URLs in the field, add a ',' (comma) at the end and then paste the above URL.
+
+Now open de boards manager by going to **tools > boards > board manager** and type Arduboy in the search bar. Select **Arduboy and D.I.Y variants** and click install.
 
 ### Pro Micro
 
