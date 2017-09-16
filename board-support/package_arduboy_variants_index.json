@@ -1,0 +1,39 @@
+{
+  "packages": [
+    {
+      "name": "arduboy-variants",
+      "maintainer": "Mr.Blinky",
+      "websiteURL": "http://mrblinky.net/arduboy/",
+      "email": "mstr.blinky@gmail.com",
+      "help": {
+	    "string": "Testing",
+        "online": "http://community.arduboy.com/"
+      },
+      "platforms": [
+        {
+          "name": "Arduboy and D.I.Y. variants",
+          "architecture": "avr",
+          "version": "1.0.0",
+          "category": "Contributed",
+          "help": {
+            "online": "http://community.arduboy.com/"
+          },
+          "url": "http://mrblinky.net/arduboy/board-support/arduboy-variants-1.0.0.zip",
+          "archiveFileName": "arduboy-variants-1.0.0.zip",
+          "checksum": "",
+          "size": "",
+          "boards": [
+            {"name": "Arduboy"},
+            {"name": "DevKit"},
+            {"name": "Leonardo"},
+            {"name": "Micro"},
+            {"name": "ProMicro"}	
+          ],
+          "toolsDependencies": [
+		  ]
+        }
+      ],
+      "tools":[]
+    }
+  ]
+}
