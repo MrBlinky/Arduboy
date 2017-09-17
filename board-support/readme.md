@@ -17,7 +17,7 @@ https://raw.githubusercontent.com/MrBlinky/Arduboy/master/board-support/package_
 
 Note if you already have one or more board URLs in the field, add a ',' (comma) at the end and then paste the above URL.
 
-After closing preferences, open the boards manager by going to **tools > boards > board manager** and type **Arduboy** in the search bar at the top. Select **Arduboy and D.I.Y variants** and click install. Go back to **tools > boards** and select **Arduboy**. Select **tools** one more and select your Arduboy **Variant**.
+After closing preferences, open the boards manager by going to **tools > boards > board manager** and type **Arduboy** in the search bar at the top. Select **Arduboy and D.I.Y variants** and click install. Go back to **tools > boards** and select **Arduboy**. Go to **tools** once more and select your Arduboy **Variant** and you're ready to go. When you need to compile for a different Arduboy, just change the variant in the tools menu and click upload.
 
 ### Pro Micro
 
