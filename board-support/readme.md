@@ -54,3 +54,9 @@ Checking for alternative displays can be done using the following defines:
 * **OLED_SSD1309** defined when a variant with SSD1309 display is selected.
 
 For boards not having the builtin LED (only Leonardo and Micro have the LED) the standard Arduino define **LED_BUILTIN** is set to use the RxLED so the Blink example sketch will make the RX LED on Arduboy.
+
+### Package and Library locations
+
+On Windows:
+* Package location: **%localappdata%\Arduino15\packages**
+* Library location: **%userprofile%\Documents\Arduino**
