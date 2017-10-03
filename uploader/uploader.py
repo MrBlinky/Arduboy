@@ -22,7 +22,11 @@ compatibledevices = [
  #Sparkfun Pro Micro 5V
  "VID:PID=1B4F:9205", "VID:PID=1B4F:9206",
 ]
-
+def delayedExit():
+	time.sleep(5)
+	#raw_input()	
+	sys.exit()
+	
 def	getComPort(verbose):
 	devicelist = list(comports())
 	for device in devicelist:
@@ -37,12 +41,12 @@ path = os.path.dirname(sys.argv[0])	+ "\\"
 
 #test file exists
 if len(sys.argv) <> 2:
-	print "USAGE uploader.py filename.hex"
-	exit()
+	print "USAGE:\n\nuploader.py file_to_upload.hex"
+	delayedExit()
 filename = sys.argv[1]	
 if not os.path.isfile(filename) :
 	print "File not found. [{}]".format(filename)
-	exit()
+	delayedExit()
 	
 #if file is zipfile, extract hex file
 try:
@@ -56,11 +60,21 @@ try:
 	tempfile = True
 except:
 	tempfile = False
-	
+
+#scan hex file for data in bootloader area
+f = open(filename,'r')
+lines = f.readlines()
+f.close()
+for line in lines:
+	if len(line) > 4:
+		if line[0] ==':' and line[3] == '7':	
+			print 'Warning!!!\nThis hex file may corrupt the bootloader on unprotected devices. Upload aborted.'
+			delayedExit()
+		
 #trigger bootloader reset
 port = getComPort(True)
 if port is None :
-	sys.exit()
+	delayedExit()
 com = Serial(port,1200)
 com.close()
 
@@ -74,7 +88,7 @@ port = getComPort(True)
 #launch avrdude
 avrdude = "{}avrdude.exe".format(path)
 config  = "-C{}avrdude.conf".format(path)
+#subprocess.call ([avrdude,config, "-v", "-patmega32u4", "-cavr109", "-P{}".format(port), "-b57600", "-D", "-Uflash:w:{}:i".format(filename)])
 subprocess.call ([avrdude,config, "-v", "-patmega32u4", "-cavr109", "-P{}".format(port), "-b57600", "-D", "-Uflash:w:{}:i".format(filename)])
 if tempfile == True : os.remove(filename)
-time.sleep(5)
-#raw_input()
+delayedExit()
