@@ -1,4 +1,4 @@
-# Upload hex file to Arduboy
+# Upload hex file to Arduboy by Mr.Blinky October 2017 v1.02
 
 #requires pyserial to be installed
 
@@ -22,20 +22,25 @@ compatibledevices = [
  #Sparkfun Pro Micro 5V
  "VID:PID=1B4F:9205", "VID:PID=1B4F:9206",
 ]
+
+bootloader = False
+
 def delayedExit():
 	time.sleep(5)
 	#raw_input()	
 	sys.exit()
 	
 def	getComPort(verbose):
+	global	bootloader
 	devicelist = list(comports())
 	for device in devicelist:
 		for vidpid in compatibledevices:
 			if  vidpid in device[2]:
 				port=device[0]
+				bootloader = (compatibledevices.index(vidpid) and 1) == 0
 				if verbose : print "found {} at port {}".format(device[1],port)
 				return port
-	if verbose : print "Arduino board not found."
+	if verbose : print "Arduboy board not found."
 
 path = os.path.dirname(sys.argv[0])	+ "\\"
 
@@ -65,25 +70,26 @@ except:
 f = open(filename,'r')
 lines = f.readlines()
 f.close()
-for line in lines:
-	if len(line) > 4:
-		if line[0] ==':' and line[3] == '7':	
-			print 'Warning!!!\nThis hex file may corrupt the bootloader on unprotected devices. Upload aborted.'
-			delayedExit()
+#for line in lines:
+#	if len(line) > 4:
+#		if line[0] ==':' and line[3] == '7':	
+#			print 'Warning!!!\nThis hex file may corrupt the bootloader on unprotected devices. Upload aborted.'
+#			delayedExit()
 		
 #trigger bootloader reset
 port = getComPort(True)
 if port is None :
 	delayedExit()
-com = Serial(port,1200)
-com.close()
-
-#wait for Arduino board to disconnect and reconnect in bootloader mode
-while getComPort(False) == port :
-	time.sleep(0.1)
-while getComPort(False) is None :
-	time.sleep(0.1)
-port = getComPort(True)
+if not bootloader:
+	print "Selecting bootloader mode..."
+	com = Serial(port,1200)
+	com.close()
+	#wait for Arduboy to disconnect and reconnect in bootloader mode
+	while getComPort(False) == port :
+		time.sleep(0.1)
+	while getComPort(False) is None :
+		time.sleep(0.1)
+	port = getComPort(True)
 
 #launch avrdude
 avrdude = "{}avrdude.exe".format(path)
