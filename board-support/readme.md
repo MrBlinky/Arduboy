@@ -12,12 +12,16 @@ variant from the tools menu. This package also contains the most popular Arduboy
 
 To install the Arduboy variants package, start the Arduino IDE and open the preferences window (**File > Preferences**) then
 copy and paste the following URL into the **Additional Boards Manager URLs** input field:
-
+```
 https://raw.githubusercontent.com/MrBlinky/Arduboy/master/board-support/package_arduboy_variants_index.json
-
+```
 Note if you already have one or more board URLs in the field, add a ',' (comma) at the end and then paste the above URL.
 
 After closing preferences, open the boards manager by going to **tools > boards > board manager** and type **Arduboy** in the search bar at the top. Select **Arduboy and D.I.Y variants** and click install. Go back to **tools > boards** and select **Arduboy**. Go to **tools** once more and select your Arduboy **Variant** and you're ready to go. When you need to compile for a different Arduboy, just change the variant in the tools menu and click upload.
+### Select board menu ###
+![Select board menu](https://raw.githubusercontent.com/MrBlinky/Arduboy/master/board-support/images/select-arduboy-board.png)
+### Select variant menu ###
+![Select variant menu](https://raw.githubusercontent.com/MrBlinky/Arduboy/master/board-support/images/select-arduboy-variant.png)
 
 ### Pro Micro
 
@@ -54,6 +58,10 @@ Checking for alternative displays can be done using the following defines:
 * **OLED_SSD1309** defined when a variant with SSD1309 display is selected.
 
 For boards not having the builtin LED (only Leonardo and Micro have the LED) the standard Arduino define **LED_BUILTIN** is set to use the RxLED so the Blink example sketch will make the RX LED on Arduboy.
+
+## Arduboy +1K
+
+The Arduboy +1K board and variants are the same as above except that the Arduboy board uses the Cathy 3K Arduboy bootloader which gives you 1K more application space. If your Arduboy doesn't have this bootloader yet then you can burn it using the Arduino IDE.
 
 ### Package and Library locations
 
