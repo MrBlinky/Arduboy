@@ -35,13 +35,13 @@
         {
           "name": "Arduboy and D.I.Y. variants",
           "architecture": "avr",
-          "version": "1.1.0",
+          "version": "1.1.1",
           "category": "Contributed",
           "help": {
             "online": "http://community.arduboy.com/"
           },
           "url": "https://raw.githubusercontent.com/MrBlinky/Arduboy/master/board-support/arduboy-variants-1.1.0.zip",
-          "archiveFileName": "arduboy-variants-1.1.0.zip",
+          "archiveFileName": "arduboy-variants-1.1.1.zip",
           "checksum": "",
           "size": "",
           "boards": [
