@@ -15,11 +15,10 @@
 
 ### Dependencies
 
-* Windows OS
-* Requires Python 2.7.x with PySerial installed
+* Requires Python 2.7.x with PySerial 2.7 installed
 * Uses Avrdude for uploading (included with this archive)
 
-### Creating Send To folder and Quick lauch shortcuts
+### Creating Send To folder and Quick lauch shortcuts (Windows)
 
 1) Browse to the uploader folder and right click **uploader.py** and select create shortcut. Rename the shortcut to Hex uploader.
 2) select the newly created shortcut and press CTRL + X to move the shortcut.
@@ -28,3 +27,24 @@
 5) select the newly pasted shortcut and press CTRL + C to copy it.
 6) Press Windows Key + R again for rhe Run dialog box and type **shell:quick launch** (including the space) and press enter.
 7) Click inside the newly open window and press CTRL + V to paste the shortcut.
+
+### Installing PySerial - Windows
+
+download and install https://pypi.python.org/packages/47/c9/7802e11ab388ad1539de716649add8bb8ca8bdff660364b3a404f79c27b7/pyserial-2.7.win32.exe#md5=21555387937eeb79126cde25abee4b35
+
+### Installing PySerial - Linux /Raspberry Pi
+
+Install PySerial with
+```
+sudo apt-get install python-serial
+```
+However if tools/listports is not present, you should install PySerial manually:
+
+* Download **pyserial-2.7.tar.gz** from https://pypi.python.org/simple/pyserial/ and extract the contents using:
+```
+tar -xzf pyserial-2.6.tar.gz 
+```
+* cd into the pyserial directory and type:
+```
+sudo python setup.py install
+```
