@@ -74,7 +74,7 @@ for line in lines:
     if len(line) > 4:
         if line[0] ==':' and line[3] == '7':    
             print 'Warning!!! This hex file may corrupt the bootloader on unprotected devices.'
-            if raw_input("Type \'y\' followed by enter to continue. Anything else to abort.").lower() == "yes":
+            if raw_input("Type \'y\' followed by enter to continue. Anything else to abort.").lower() == "y":
                 break
             print 'Upload aborted.'    
             delayedExit()
@@ -95,7 +95,10 @@ if not bootloader:
     port = getComPort(True)
 
 #launch avrdude
-avrdude = "{}avrdude.exe".format(path)
+if os.name == 'nt':
+    avrdude = "{}avrdude.exe".format(path)
+else:
+    avrdude = "{}avrdude".format(path)
 config  = "-C{}avrdude.conf".format(path)
 subprocess.call ([avrdude,config, "-v", "-patmega32u4", "-cavr109", "-P{}".format(port), "-b57600", "-D", "-Uflash:w:{}:i".format(filename)])
 if tempfile == True : os.remove(filename)
