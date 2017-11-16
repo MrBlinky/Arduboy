@@ -10,8 +10,11 @@ variant from the tools menu. This package also contains the most popular Arduboy
 
 ## Installation Instructions
 
-To install the Arduboy variants package, start the Arduino IDE and open the preferences window (**File > Preferences**) then
-copy and paste the following URL into the **Additional Boards Manager URLs** input field:
+To install the Arduboy variants package, start the Arduino IDE and open the preferences window (**File > Preferences**)
+
+![preferences](https://raw.githubusercontent.com/MrBlinky/Arduboy/master/board-support/images/preferences.png)
+
+Copy and paste the following URL into the **Additional Boards Manager URLs** input field:
 ```
 https://raw.githubusercontent.com/MrBlinky/Arduboy/master/board-support/package_arduboy_variants_index.json
 ```
@@ -63,8 +66,15 @@ For boards not having the builtin LED (only Leonardo and Micro have the LED) the
 
 The Arduboy +1K board and variants are the same as above except that the Arduboy board uses the Cathy 3K Arduboy bootloader which gives you 1K more application space. If your Arduboy doesn't have this bootloader yet then you can burn it using the Arduino IDE.
 
-### Package and Library locations
+### Libraries
+
+Note. Libraries that are in your sketchbook (installed manually or through the Library manager) overrule the libraries in this board package. So if you've installed the **Arduboy** and **Arduboy2** Libraries, you need to remove them. You can do this by going to **preferences** again, copy the Sketchbook location then press Windowskey + R for the run dialog, paste the sketchbook location and hit enter or click ok. open the **libraries** directory and delete or rename the **Arduboy** and **Arduboy2** directories
+
+
+### Default package and library locations
 
 On Windows:
 * Package location: **%localappdata%\Arduino15\packages**
 * Library location: **%userprofile%\Documents\Arduino**
+
+
