@@ -817,6 +817,7 @@ run_bootloader:
                         #ifndef ARDUBOY
                             rcall   SetupHardware
                         #endif
+                            rcall   USB_Init
                             sei
                             rcall   ResetTimeout
 bootloader_loop:
@@ -827,17 +828,18 @@ bootloader_loop:
                             subi    r24, lo8(TIMEOUT_PERIOD)
                             sbci    r25, hi8(TIMEOUT_PERIOD)
                             brcs    bootloader_loop             ;loop < TIMEOUT_PERIOD
-
-                            ;timeout, USB detach and start sketch
-
-                            lds     r24, UDCON
-                            ori     r24, 0x01
-                            sts     UDCON, r24
                             ;rjmp   StartSketch
+
+                            ;timeout, start sketch
 
 ;-------------------------------------------------------------------------------
 StartSketch:
-x70e4:                      cli
+                            cli
+                            ;lds     r24, UDCON      ;USB detach
+                            ;ori     r24, 0x01
+                            ldi     r24, 0x01       ;DETACH
+                            sts     UDCON, r24
+                            
                             sts     TIMSK1, r1      ;Undo TIMER1 setup and clear the count before running the sketch
                             sts     TCCR1B, r1
                             sts     TCNT1H, r1
@@ -2464,7 +2466,8 @@ SetupHardware_display:
                             sts     TIMSK1, r19         ;enable timer 1 output compare A match interrupt
                             ldi     r24, 0x03           ;CS11 | CS10 1/64 prescaler on timer 1 input
                             sts     TCCR1B, r24
-                            ;rjmp   USB_Init
+                            ret
+                            
 ;-------------------------------------------------------------------------------
 USB_Init:
                             ldi     r30, UHWCON
@@ -2475,29 +2478,27 @@ USB_Init:
                             ldi     r24, 0x4A
                             out     PLLFRQ, r24
                             ;rjmp   USB_ResetInterface
+                            
 ;-------------------------------------------------------------------------------
 USB_ResetInterface:
-
                             ;USB_INT_DisableAllInterrupts:
-
+                            
                             ldi     r30, USBCON
-                            ;ldi    r31, 0x00               ;r31 still 0 from CLKPR above
-                            ld      r24, Z
-                            andi    r24, 0xFE
-                            st      Z, r24
+                            ldi     r31, 0x00               ;r31 still 0 from CLKPR above
+                            rcall   clearbit_z0             ;clear VBUSTE
                             sts     UDIEN, r1
 
                             ;USB_INT_ClearAllInterrupts:
 
-                            sts USBINT, r1
-                            sts UDINT, r1
+                            sts USBINT, r1                  ;clear VBUSTI
+                            sts UDINT, r1                   ;clear USB device interrupts
 
-                            ldi     r30, USBCON
-                            ;ldi        r31, 0
+                            ;ldi     r30, USBCON            
+                            ;ldi     r31, 0
                             ld      r24, Z
                             andi    r24, 0x7F
                             st      Z, r24
-                            ori     r24, 0x80
+                            ori     r24, 0x80               ;USBE
                             st      Z, r24
                             andi    r24, 0xDF
                             st      Z, r24
@@ -2506,11 +2507,11 @@ USB_ResetInterface:
                             sts     USB_Device_ConfigurationNumber, r1
                             ldi     r30,UDCON
                             ld      r24, Z
-                            andi    r24, 0xFB
+                            andi    r24, 0xFB               ;full speed
                             st      Z, r24
                             ldi     r30, USBCON
                             ld      r24, Z
-                            ori     r24, 0x01
+                            ori     r24, 0x01               ;VBUSTE
                             st      Z, r24
                             ldi     r24, 0x00
                             ldi     r22, 0x00
@@ -2518,19 +2519,22 @@ USB_ResetInterface:
                             rcall   Endpoint_ConfigureEndpoint_Prv
                             ldi     r30, UDINT
                             ;ldi    r31, 0x00           ;(call didn't change r30:31)
-                            ld      r24, Z
-                            andi    r24, 0xFE
-                            st      Z, r24
+                            rcall   clearbit_z0
                             rcall   UDIEN_get
                             ori     r24, 0x08 | 0x01    ;EORSTE | SUSPE
                             rcall   UDIEN_set
                             ldi     r30,UDCON
-                            ld      r24, Z
-                            andi    r24, 0xFE
-                            st      Z, r24
+                            rcall   clearbit_z0
                             ldi     r30, USBCON
                             ld      r24, Z
                             ori     r24, 0x10
+                            st      Z, r24
+                            ret
+                            
+;-------------------------------------------------------------------------------
+clearbit_z0:                            
+                            ld      r24, Z
+                            andi    r24, 0xFE               
                             st      Z, r24
                             ret
 ;-------------------------------------------------------------------------------
