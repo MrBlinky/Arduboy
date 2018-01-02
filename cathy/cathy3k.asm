@@ -2471,7 +2471,7 @@ SetupHardware_display:
 ;-------------------------------------------------------------------------------
 USB_Init:
                             ldi     r30, UHWCON
-                            ;ldi    r31, 0x00               ;r31 still 0 from CLKPR above
+                            ldi     r31, 0x00               ;r31 still 0 from CLKPR above
                             ld      r24, Z
                             ori     r24, 0x01               ;UVREGE: enable USB pad regulator
                             st      Z, r24
@@ -2484,7 +2484,7 @@ USB_ResetInterface:
                             ;USB_INT_DisableAllInterrupts:
                             
                             ldi     r30, USBCON
-                            ldi     r31, 0x00               ;r31 still 0 from CLKPR above
+                            ;ldi     r31, 0x00               ;r31 still 0 from CLKPR above
                             rcall   clearbit_z0             ;clear VBUSTE
                             sts     UDIEN, r1
 
