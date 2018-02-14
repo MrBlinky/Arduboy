@@ -255,7 +255,7 @@
 ;LED defines
 #ifdef ARDUBOY
 #ifdef ARDUBOY_PROMICRO
-#define OLED_RST        7
+#define OLED_RST        1
 #define OLED_CS         3
 #define OLED_DC         4
 #define RGB_R           6
@@ -434,13 +434,13 @@ SOFTWARE_IDENTIFIER:
                             .ascii  "CATHY3K"
                             #endif
 
-;- LineEncoding structure -
-
-LineEncoding:
-                            .long   0   ;BaudRateBPS
-                            .byte   0   ;CharFormat
-                            .byte   0   ;ParityType
-                            .byte   8   ;DataBits
+;;- LineEncoding structure - (moved to .bss)
+;
+;LineEncoding:
+;                            .long   0   ;BaudRateBPS
+;                            .byte   0   ;CharFormat
+;                            .byte   0   ;ParityType
+;                            .byte   8   ;DataBits
 
 ;- DeviceDiscriptor structure -
 
@@ -758,9 +758,9 @@ reset_vector_b2:
                             brne    reset_vector_b2
 
                         #ifdef  ARDUBOY
-                            push    r25                     ;save MCUSR state
+                            ;push    r25                     ;save MCUSR state
                             rcall   SetupHardware           ;For Arduboy we want hardware initialized now for button test and application
-                            pop     r25                     ;saved MCUSR state
+                            ;pop     r25                     ;saved MCUSR state
                         #endif
 ;-------------------------------------------------------------------------------
 main:
@@ -2689,6 +2689,12 @@ RGBLEDstate:                        .byte   0   ;Note: must be exactly before LL
 LLEDPulse:                          .word   0
 USB_Device_ConfigurationNumber:     .byte   0
 ;USB_IsInitialized:                 .byte   0   ;not used
+
+LineEncoding:                       ;structure:
+                                    .long   0   ;BaudRateBPS
+                                    .byte   0   ;CharFormat
+                                    .byte   0   ;ParityType
+                                    .byte   0   ;DataBits
 
 USB_ControlRequest:                 ;structure:
 USB_ControlRequest_bmRequestType:   .byte   0
