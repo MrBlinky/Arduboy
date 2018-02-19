@@ -586,134 +586,15 @@ bad_interrupt:
 VECTOR_00_7800:             cli
                             rjmp    reset_vector
 
-VECTOR_01:                  rjmp    bad_interrupt
-                        #ifdef ARDUBOY
-API_DISPLAY_7806:           rjmp    Display_Z           ;r30:r31 = 1K display buffer, r24, r25 used
-                        #else
-                            ret
-                        #endif
-VECTOR_02:                  rjmp    bad_interrupt
-                            ret
-
-VECTOR_03:                  rjmp    bad_interrupt
-                            ret
-
-VECTOR_04:                  rjmp    bad_interrupt
-                            ret
-
-VECTOR_05:                  rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
+                            .space  9*4
+                            
 VECTOR_10:                  push    r0
                             rjmp    USB_general_int
 
-                            rjmp    bad_interrupt
-                            ret
+                            .space 6*4
+                            
+VECTOR_17:                  rjmp    TIMER1_COMPA_interrupt      ;Timer/Counter1 Compare Match A
 
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-VECTOR_17:                  push    r0
-                            rjmp    TIMER1_COMPA_interrupt      ;Timer/Counter1 Compare Match A
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ret
-
-                            rjmp    bad_interrupt
-                            ;nop
 ;-------------------------------------------------------------------------------
 ;RESET vector
 ;-------------------------------------------------------------------------------
@@ -725,7 +606,7 @@ reset_vector:               eor     r1, r1              ;global zero reg
                             out     SPH, r29            ;SP = RAMEND-2
                             out     SPL, r28
 
-                            in      r25, MCUSR          ;save MCUSR state
+                            in      r16, MCUSR          ;save MCUSR state
                             out     MCUSR, r1           ;MCUSR
 
                             ldi     r24, 0x18           ;we want watch dog disabled asap
@@ -758,9 +639,7 @@ reset_vector_b2:
                             brne    reset_vector_b2
 
                         #ifdef  ARDUBOY
-                            ;push    r25                     ;save MCUSR state
                             rcall   SetupHardware           ;For Arduboy we want hardware initialized now for button test and application
-                            ;pop     r25                     ;saved MCUSR state
                         #endif
 ;-------------------------------------------------------------------------------
 main:
@@ -772,10 +651,10 @@ main:
                             st      -z,r1
                             pop     r22                     ;r22:23 magic key at RAMEND-1
                             pop     r23
-                            sbrc    r25, 1                  ;MCUSR state EXTRF skip no external reset
+                            sbrc    r16, 1                  ;MCUSR state EXTRF skip no external reset
                             rjmp    run_bootloader          ;enter bootloader mode
 
-                            sbrs r25, 0                     ;MCUSR state PORF test power on reset
+                            sbrs r16, 0                     ;MCUSR state PORF test power on reset
                             rjmp main_test_wdt              ;not POR
 
                             ;power on reset
@@ -793,7 +672,7 @@ main:
 
                             ;no application or no POR
 
-main_test_wdt:              sbrs    r25, 3                  ;MCUSR state WDRF
+main_test_wdt:              sbrs    r16, 3                  ;MCUSR state WDRF
                             rjmp    run_bootloader          ;WDT not triggered, enter bootloader mode
 
                             ;WDT was triggered, test magic key on old and new location
@@ -919,6 +798,7 @@ LEDPulse_on_b3:
                             ret
 ;-------------------------------------------------------------------------------
 TIMER1_COMPA_interrupt:
+                            push    r0
                             in      r0, SREG                    ;save SREG
                             push    r24
                             push    r25
@@ -957,10 +837,8 @@ TIMER1_COMPA_interrupt_b2:
                             breq    TIMER1_COMPA_int_end    ;no sketch loaded
 
                             rcall   GetTimeout              ;no button, sketch loaded, increase timeout
-TIMER1_COMPA_int_inctimeout:
                             adiw r24, 0x01                  ;Timeout++
-                            st   z,r25
-                            st  -z,r24
+                            rcall   SetTimeout
 TIMER1_COMPA_int_end:
                             pop  r31
                             pop  r30
@@ -1102,10 +980,8 @@ shared_reti:
                             reti
 ;-------------------------------------------------------------------------------
 GetTimeout:
-                            ldi  r30, lo8(Timeout)
-                            ldi  r31, hi8(Timeout)
-                            ld   r24, z+                    ;get LSB timeout value
-                            ld   r25, z                     ;get MSB timeout value
+                            lds  r24, Timeout+0             ;get LSB timeout value
+                            lds  r25, Timeout+1             ;get MSB timeout value
                             ret
 ;-------------------------------------------------------------------------------
 ResetTimeout:
