@@ -1,4 +1,4 @@
-## Arduboy bootloader Bad Apple streaming demo by Mr.Blinky October 2017 1.02 ##
+## Arduboy bootloader Bad Apple streaming demo by Mr.Blinky Oct 2017-Feb 2018 1.03 ##
 
 #requires pyserial to be installed
 
@@ -83,9 +83,8 @@ def Display(image):
 	global com
 	com.write('A\x00\x00')
 	com.read(1)
-	for i in range(0,8):
-		com.write('B\x00\x80D' + image[i*128:(i+1)*128])
-		com.read(1)
+	com.write('B\x04\x00D' + image[0:1024]) #display supports 1K blocks
+	com.read(1)
 		
 def	LedControl(b):            #Bit 7 set: OLED display off
 	com.write('x' + chr(b))   #Bit 6 set: RGB Breathing function off
@@ -107,6 +106,8 @@ if not bootloader:
 	#wait for Arduboy to disconnect and reconnect in bootloader mode
 	while getComPort(False) == port :
 		time.sleep(0.1)
+		if bootloader:
+			break        
 	while getComPort(False) is None :
 		time.sleep(0.1)
 	port = getComPort(True)
