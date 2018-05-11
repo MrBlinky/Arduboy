@@ -1,4 +1,4 @@
-/* Quick and dirty (S)NES to Arduboy button driver by Mr.Blinky April 2018
+/* Quick and dirty (S)NES to Arduboy button driver v1.1 by Mr.Blinky April,May 2018
  *
  * Using digital pins so it can be easily run on any Arduino
  * Because DigitalRead and DigitalWrite are pretty slow, no delays are
@@ -16,6 +16,8 @@
  *    |O| CLOCK
  *    |O| 5V   
  *    |_|      
+ *    
+ *    ver 1.1: swapped NES controller A + B buttons, added reset pin.
  */
 #define SNES_CONTROLLER //remark this line when using NES controller
 
@@ -27,13 +29,14 @@
 #define BS_A     _BV(3)
 #define BS_B     _BV(2)
 
-//Arduboy button pins
+//Arduboy button driver pins
 #define BUTTON_A      7
 #define BUTTON_B      8
 #define BUTTON_UP     A0
 #define BUTTON_DOWN   A3
 #define BUTTON_LEFT   A2
 #define BUTTON_RIGHT  A1
+#define BUTTON_RESET  9
 
 //button status LED
 #define LED     17    //RxLED on Pro Micro
@@ -82,7 +85,11 @@ void setup()
 
 void updateButtonState(uint8_t button)
 {
-  if (!digitalRead(CONTROLLER_DATA)) buttons_state |= button;
+  if (!digitalRead(CONTROLLER_DATA))
+  {
+    if (button == CONTROLLER_SELECT) setResetPin();
+    buttons_state |= button;
+  }
   digitalWrite(CONTROLLER_CLOCK,HIGH); //clock out next button state
   digitalWrite(CONTROLLER_CLOCK,LOW);
 }
@@ -91,6 +98,14 @@ void setButtonPin(uint8_t mask, uint8_t button)
 {
   if ((buttons_state & mask) != 0) digitalWrite( button,LOW);
   else digitalWrite( button,HIGH);
+}
+
+void setResetPin()
+{
+  pinMode(BUTTON_RESET, OUTPUT);
+  digitalWrite(BUTTON_RESET, LOW);
+  delay(100);
+  pinMode(BUTTON_RESET,INPUT);
 }
 
 void loop()
@@ -103,8 +118,8 @@ void loop()
   updateButtonState(CONTROLLER_B);
   updateButtonState(CONTROLLER_Y);
 #else
-  updateButtonState(CONTROLLER_B);
   updateButtonState(CONTROLLER_A);
+  updateButtonState(CONTROLLER_B);
 #endif
   updateButtonState(CONTROLLER_SELECT);
   updateButtonState(CONTROLLER_START);
@@ -126,7 +141,7 @@ void loop()
   setButtonPin(BS_DOWN, BUTTON_DOWN);
   setButtonPin(BS_LEFT, BUTTON_LEFT);
   setButtonPin(BS_RIGHT, BUTTON_RIGHT);
-
+  
   //update button status LED
   if (buttons_state) digitalWrite(LED,LED_ON);
   else digitalWrite(LED,LED_OFF);
