@@ -1,0 +1,27 @@
+Partlist
+
+Exported from Arduboy flashcart.sch at 11-6-2018 12:32
+
+EAGLE Version 9.0.0 Copyright (c) 1988-2018 Autodesk, Inc.
+
+Assembly variant: 
+
+Part     Value             Device                            Package                  Library            Sheet
+
+1                          SMD2                              SMD1,27-2,54             wirepad            1
+2                          SMD2                              SMD1,27-2,54             wirepad            1
+3                          SMD2                              SMD1,27-2,54             wirepad            1
+4                          SMD2                              SMD1,27-2,54             wirepad            1
+5                          SMD2                              SMD1,27-2,54             wirepad            1
+6                          SMD2                              SMD1,27-2,54             wirepad            1
+8                          SMD2                              SMD1,27-2,54             wirepad            1
+9                          SMD2                              SMD1,27-2,54             wirepad            1
+10                         SMD2                              SMD1,27-2,54             wirepad            1
+11                         SMD2                              SMD1,27-2,54             wirepad            1
+12\                        SMD2                              SMD1,27-2,54             wirepad            1
+C1                         C-EUC1206                         C1206                    rcl                1
+C2                         C-EUC1206                         C1206                    rcl                1
+S1                         MOMENTARY-SWITCH-SPST-2-SMD-5.2MM TACTILE_SWITCH_SMD_5.2MM SparkFun-Switches  1
+U1       MCP1700T-3302E/TT MCP1700T-3302E/TT                 MCP1700T-3302E/TT        MCP1700T-3302E_TT  1
+U2       TXB0104D          TXB0104D                          SOIC127P600X175-14N      TXB0104D           1
+U3       W25Q128FV         SPI_FLASH-X25XXSMD1               SO08-EIAJ                SparkFun-IC-Memory 1
