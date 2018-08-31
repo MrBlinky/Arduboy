@@ -1,15 +1,27 @@
 @prompt=$G
-@echo  Cathy 3K bootloader make                      by Mr. Blinky Oct 2017 - May 2018
+@echo  Cathy 3K bootloader make                      by Mr. Blinky Oct 2017 - Jul 2018
 @echo ________________________________________________________________________________
 
 @rem Arduboy bootloaders
 call :make arduboy3k-bootloader "-DARDUBOY -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
 call :make arduboy3k-bootloader-devkit "-DARDUBOY -DARDUBOY_DEVKIT -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
 call :make arduboy3k-bootloader-sh1106 "-DARDUBOY -DOLED_SH1106 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
+call :make arduboy3k-bootloader-ssd132x-96x96 "-DARDUBOY -DOLED_SSD132X_96X96 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
+call :make arduboy3k-bootloader-ssd132x-128x96 "-DARDUBOY -DOLED_SSD132X_128X96 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
+call :make arduboy3k-bootloader-ssd132x-128x128 "-DARDUBOY -DOLED_SSD132X_128X128 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
 call :make arduboy3k-bootloader-micro "-DARDUBOY -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0037"
 call :make arduboy3k-bootloader-micro-sh1106 "-DARDUBOY -DOLED_SH1106 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0037"
+call :make arduboy3k-bootloader-micro-ssd132x-96x96 "-DARDUBOY -DOLED_SSD132X_96X96 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0037"
+call :make arduboy3k-bootloader-micro-ssd132x-128x96 "-DARDUBOY -DOLED_SSD132X_128X96 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0037"
+call :make arduboy3k-bootloader-micro-ssd132x-128x128 "-DARDUBOY -DOLED_SSD132X_128X128 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0037"
 call :make arduboy3k-bootloader-promicro "-DARDUBOY -DARDUBOY_PROMICRO -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
 call :make arduboy3k-bootloader-promicro-sh1106 "-DARDUBOY -DARDUBOY_PROMICRO -DOLED_SH1106 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
+call :make arduboy3k-bootloader-promicro-ssd132x-96x96 "-DARDUBOY -DARDUBOY_PROMICRO -DOLED_SSD132X_96X96 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
+call :make arduboy3k-bootloader-promicro-ssd132x-128x96 "-DARDUBOY -DARDUBOY_PROMICRO -DOLED_SSD132X_128X96 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
+call :make arduboy3k-bootloader-promicro-ssd132x-128x128 "-DARDUBOY -DARDUBOY_PROMICRO -DOLED_SSD132X_128X128 -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
+call :make arduboy3k-bootloader-st7565 "-DARDUBOY -DDEVICE_VID=0x2341 -DLCD_ST7565 -DDEVICE_PID=0x0036"
+call :make arduboy3k-bootloader-micro-st7565 "-DARDUBOY -DDEVICE_VID=0x2341 -DLCD_ST7565 -DDEVICE_PID=0x0037"
+call :make arduboy3k-bootloader-promicro-st7565 "-DARDUBOY -DARDUBOY_PROMICRO -DDEVICE_VID=0x2341 -DLCD_ST7565 -DDEVICE_PID=0x0036"
 
 @rem Arduino bootloaders (obselete due to cathy2k)
 @rem call :make cathy3k-leonardo "-DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"

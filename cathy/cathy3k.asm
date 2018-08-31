@@ -6,7 +6,7 @@
 ;           For Arduboy
 ;
 ;                   Assembly optimalisation and Arduboy features
-;                         by Mr.Blinky Oct 2017 - June 2018
+;                         by Mr.Blinky Oct 2017 - August 2018
 ;
 ;             m s t r <d0t> b l i n k y <at> g m a i l <d0t> c o m
 ;
@@ -64,7 +64,7 @@
 ;  - Read single EEPROM byte. Command not used. read EEPROM block command is
 ;    used instead. A single EEPROM byte can be read as a ne byte block.
 ;
-;  Licenced as below
+;  Licenced as below (MIT)
 ;
 ;-------------------------------------------------------------------------------
 ;
@@ -109,6 +109,9 @@
 
 ; #define OLED_SH1106       //;for Arduboy clones using SH1106 OLED display only
 
+; #define LCD_ST7565        //;for Arduboy clones using ST7565 LCD displays with
+;                           //;RGB backlight and Power LED
+
 ;the DEVICE_VID and DEVICE_PID will determine for which board the build will be
 ;made. (Arduino Leonardo, Arduino Micro, Arduino Esplora, SparkFun ProMicro)
 
@@ -135,6 +138,9 @@
 #define BOOT_LOGO_X             56
 #define BOOT_LOGO_Y             (16 / 8)
 #define BOOT_LOGO_OFFSET        BOOT_LOGO_X + BOOT_LOGO_Y * 128
+
+#define WIDTH   128
+#define HEIGHT  64
 
 ;OLED display commands
 #define OLED_SET_PAGE_ADDR          0xB0
@@ -359,12 +365,21 @@
  #define RGB_R           6
  #define RGB_G           0
  #define RGB_B           5
- #define RGB_RED_ON      cbi     PORTB, RGB_R
- #define RGB_GREEN_ON    cbi     PORTD, RGB_G
- #define RGB_BLUE_ON     cbi     PORTB, RGB_B
- #define RGB_RED_OFF     sbi     PORTB, RGB_R
- #define RGB_GREEN_OFF   sbi     PORTD, RGB_G
- #define RGB_BLUE_OFF    sbi     PORTB, RGB_B
+ #ifdef LCD_ST7565
+  #define RGB_RED_ON      sbi     PORTB, RGB_R
+  #define RGB_GREEN_ON    sbi     PORTD, RGB_G
+  #define RGB_BLUE_ON     sbi     PORTB, RGB_B
+  #define RGB_RED_OFF     cbi     PORTB, RGB_R
+  #define RGB_GREEN_OFF   cbi     PORTD, RGB_G
+  #define RGB_BLUE_OFF    cbi     PORTB, RGB_B
+ #else
+  #define RGB_RED_ON      cbi     PORTB, RGB_R
+  #define RGB_GREEN_ON    cbi     PORTD, RGB_G
+  #define RGB_BLUE_ON     cbi     PORTB, RGB_B
+  #define RGB_RED_OFF     sbi     PORTB, RGB_R
+  #define RGB_GREEN_OFF   sbi     PORTD, RGB_G
+  #define RGB_BLUE_OFF    sbi     PORTB, RGB_B
+ #endif
 #else
  #ifdef ARDUBOY_DEVKIT
   #define OLED_RST        6
@@ -386,12 +401,22 @@
   #define RGB_R           6
   #define RGB_G           7
   #define RGB_B           5
-  #define RGB_RED_ON      cbi     PORTB, RGB_R
-  #define RGB_GREEN_ON    cbi     PORTB, RGB_G
-  #define RGB_BLUE_ON     cbi     PORTB, RGB_B
-  #define RGB_RED_OFF     sbi     PORTB, RGB_R
-  #define RGB_GREEN_OFF   sbi     PORTB, RGB_G
-  #define RGB_BLUE_OFF    sbi     PORTB, RGB_B
+  #ifdef LCD_ST7565
+   #define POWER_LED       0   
+   #define RGB_RED_ON      sbi     PORTB, RGB_R
+   #define RGB_GREEN_ON    sbi     PORTB, RGB_G
+   #define RGB_BLUE_ON     sbi     PORTB, RGB_B
+   #define RGB_RED_OFF     cbi     PORTB, RGB_R
+   #define RGB_GREEN_OFF   cbi     PORTB, RGB_G
+   #define RGB_BLUE_OFF    cbi     PORTB, RGB_B
+  #else  
+   #define RGB_RED_ON      cbi     PORTB, RGB_R
+   #define RGB_GREEN_ON    cbi     PORTB, RGB_G
+   #define RGB_BLUE_ON     cbi     PORTB, RGB_B
+   #define RGB_RED_OFF     sbi     PORTB, RGB_R
+   #define RGB_GREEN_OFF   sbi     PORTB, RGB_G
+   #define RGB_BLUE_OFF    sbi     PORTB, RGB_B
+  #endif
  #endif
 #endif
 
@@ -593,17 +618,44 @@ SOFTWARE_IDENTIFIER:
                             .ascii  "ARDUBOY"
 
                         ;OLED display initialization data
-
-DisplaySetupData:           .byte   0xD5, 0xF0              ;Display Clock Divisor
+DisplaySetupData:
+                        #if defined(OLED_SSD132X_96X96) || (OLED_SSD132X_128X96) || (OLED_SSD132X_128X128)
+                          #if defined(OLED_SSD132X_96X96)
+                            .byte   0x15, 0x10, 0x3f        ;Set column start and end address  skipping left most 32 pixels
+                          #else        
+                            .byte   0x15, 0x00, 0x3f        ;Set column start and end address full width
+                          #endif
+                          #if defined (OLED_SSD132X_96X96) 
+                            .byte   0x75, 0x30, 0x6f        ;Set row start and end address
+                          #elif defined (OLED_SSD132X_128X96)
+                            .byte   0x75, 0x10, 0x4f
+                          #else
+                            .byte   0x75, 0x20, 0x5f
+                          #endif
+                            .byte   0xA0, 0x55              ;set re-map: split odd-even COM signals|COM remap|vertical address increment|column address remap
+                            .byte   0xA1, 0x00              ;set display start line
+                            .byte   0xA2, 0x00              ;set display offset
+                            .byte   0xA8, 0x7F              ;Set MUX ratio
+                            .byte   0x81, 0xCF              ;Set contrast
+                            .byte   0xB1, 0x21              ;reset and 1st precharge phase length
+                            .byte   OLED_SET_DISPLAY_ON     ;display on
+                        #elif defined (LCD_ST7565)
+                            .byte   0xC8                    ;SET_COM_REVERSE
+                            .byte   0x28 | 0x7              ;SET_POWER_CONTROL  | 0x7
+                            .byte   0x20 | 0x5              ;SET_RESISTOR_RATIO | 0x5
+                            .byte   0x81                    ;SET_VOLUME_FIRST
+                            .byte   0x13                    ;SET_VOLUME_SECOND
+                            .byte   0xAF                    ;DISPLAY_ON
+                        #else
+                            .byte   0xD5, 0xF0              ;Display Clock Divisor
                             .byte   0x8D, 0x14              ;Charge Pump Setting enabled
                             .byte   0xA1                    ;Segment remap
                             .byte   0xC8                    ;COM output scan direction
                             .byte   0x81, 0xCF              ;Set contrast
                             .byte   0xD9, 0xF1              ;set precharge
                             .byte   OLED_SET_DISPLAY_ON     ;display on
-                            ;.byte  0x20, 0x00              ;set display mode to horizontal addressing
                             .byte   OLED_SET_COLUMN_ADDR_LO
-                        ;   .byte   0x21, 0x00, 0x7F        ;set column address range
+                        #endif
 DisplaySetupData_End:
                             ;USB boot icon graphics
 
@@ -1105,8 +1157,8 @@ WriteNextResponseByte_b2:
                             rjmp    WriteNextResponseByte_b1
 WriteNextResponseByte_b3:
                             sts     UEDATX, r0
-                            lds     r24,LED_Control
-                            bst     r24,LED_CTRL_RXTX
+                            lds     r24, LED_Control
+                            bst     r24, LED_CTRL_RXTX
                             brts    WriteNextResponseByte_ret           ;RxTx LEDs disabled
                             TX_LED_ON
                             ldi     r24, lo8(TX_RX_LED_PULSE_PERIOD)
@@ -1121,8 +1173,8 @@ CDC_Task:
 
                             ;endpoint has command from host
 
-                            lds     r24,LED_Control
-                            bst     r24,LED_CTRL_RXTX
+                            lds     r24, LED_Control
+                            bst     r24, LED_CTRL_RXTX
                             brts    CDC_Task_b1             ;RxTx LEDs disabled
                             RX_LED_ON
                             ldi     r24, lo8(TX_RX_LED_PULSE_PERIOD)
@@ -1177,9 +1229,9 @@ CDC_Task_Command_A:         ;-----------------------------------set current addr
                             brne    CDC_Task_Command_p
 
                             rcall   FetchNextCommandByte
-                            mov     r5,r24
+                            mov     r5, r24
                             rcall   FetchNextCommandByte
-                            mov     r4,r24
+                            mov     r4, r24
                             rjmp    CDC_Task_Acknowledge
 CDC_Task_Command_p:         ;-----------------------------------programmer type
                             cpi     r24, 'p'
@@ -1233,7 +1285,7 @@ CDC_Task_Command_v:         ;-----------------------------------Hardware version
                             in      r24,PINF            ;read D-Pad buttons
                             com     r24                 ;get active high button states in low nibble
                             swap    r24
-                            andi    r24,0x0F
+                            andi    r24, 0x0F
                             subi    r24,-'A'            ;'A' + (UP << 3) + (RIGHT << 2) + (LEFT << 1) + DOWN
                           #endif
                             rjmp    CDC_Task_Response
@@ -1432,7 +1484,7 @@ CDC_Task_WriteMem_loop:
 
                             ;Flash
 
-                            bst     r28,0                   ;block length
+                            bst     r28, 0                   ;block length
                             brts    CDC_Task_WriteMem_lsb
 
                             ;msb,  write word
@@ -1532,7 +1584,7 @@ CDC_Task_TestBitCmds:       ;-----------------------------------get lock bits
 CDC_Task_getfusebits:
                             ldi     r31, 0x00
                             ldi     r24, 0x09
-                            out     SPMCSR,r24
+                            out     SPMCSR, r24
                             lpm     r24, Z
                             rjmp    CDC_Task_Response
 CDC_Task_Command_D:         ;-----------------------------------Write EEPROM byte
@@ -2238,7 +2290,7 @@ TestApplicationFlash:
                             ldi     r31, hi8(APPLICATION_START_ADDR)
                             lpm     r24, Z+
                             lpm     r25, Z
-                            adiw    r24,1
+                            adiw    r24, 1
                             ret
 ;-------------------------------------------------------------------------------
 SetupHardware:
@@ -2260,14 +2312,14 @@ SetupHardware:
                             ldi     r24, 0xC0               ;pullups on button A and B
                             out     PORTF, r24
                         #else
-                            ldi     r24, 0xE7               ;RGBLED, SPI_CLK, MOSI, RXLED as outputs
-                            out     DDRB, r24   
                           #if DEVICE_PID == 0x0037        //; Micro RXLED is reversed
                             ldi     r24, 0xF0               ;RGBLED OFF | PULLUP B-Button | RXLED OFF
                           #else 
                             ldi     r24, 0xF1               ;RGBLED OFF | PULLUP B-Button | RXLED OFF
                           #endif    
                             out     PORTB, r24  
+                            ldi     r24, 0xE7               ;RGBLED, SPI_CLK, MOSI, RXLED as outputs
+                            out     DDRB, r24   
                             out     DDRE, r1                ;all as inputs
                             sbi     PORTE, BTN_A_BIT        ;enable pullup for A button
                             out     DDRF, r1                ;all as inputs
@@ -2277,16 +2329,22 @@ SetupHardware:
                             
                             ;setup display io and reset
 
-                        #ifdef ARDUBOY_PROMICRO
+                        #if defined (ARDUBOY_PROMICRO)
+                            ldi     r24, (1 << OLED_CS) | (1 << TX_LED) | (RGB_G) | (1 << CART_CS) ;RST active low, CS inactive high, Command mode, Tx LED off, RGB green off, Flash cart inactive high
+                            out     PORTD, r24
                             ldi     r24, (1 << OLED_RST) | (1 << OLED_CS) | (1 << OLED_DC) | (1 << TX_LED) | (1 << RGB_G) | (1 << CART_CS) ; as outputs
                             out     DDRD, r24
-                            ldi     r24, (1 << OLED_CS) | (1 << TX_LED) | (RGB_G) | (1 << CART_CS) ;RST active low, CS inactive high, Command mode, Tx LED off, RGB green off, Flash cart inactive high
+                        #elif defined (LCD_ST7565)
+                            ldi     r24, (1 << OLED_CS) | (1 << TX_LED) | (1 << CART_CS) ;RST active low, CS inactive high, Command mode, Tx LED off, Flash cart inactive high. Power LED active low
+                            out     PORTD, r24
+                            ldi     r24, (1 << OLED_RST) | (1 << OLED_CS) | (1 << OLED_DC) | (1 << TX_LED) | (1 << CART_CS) | (1 << POWER_LED); as outputs
+                            out     DDRD, r24
                         #else
+                            ldi     r24, (1 << OLED_CS) | (1 << TX_LED) | (1 << CART_CS) ;RST active low, CS inactive high, Command mode, Tx LED off, Flash cart inactive high
+                            out     PORTD, r24
                             ldi     r24, (1 << OLED_RST) | (1 << OLED_CS) | (1 << OLED_DC) | (1 << TX_LED) | (1 << CART_CS); as outputs
                             out     DDRD, r24
-                            ldi     r24, (1 << OLED_CS) | (1 << TX_LED) | (1 << CART_CS) ;RST active low, CS inactive high, Command mode, Tx LED off, Flash cart inactive high
                         #endif
-                            out     PORTD, r24
                             
                             ;setup SPI
 
@@ -2302,9 +2360,9 @@ SetupHardware_bootloader:
                             ;pull display out of reset
 
                         #ifdef ARDUBOY_PROMICRO
-                            ldi     r24, (1 << OLED_RST) | (1 << TX_LED) | (RGB_G)  | (1 << CART_CS) ;RST inactive, CS active low, Command mode, Tx LED off, RGB green off, Flash cart inactive
+                            ldi     r24, (1 << OLED_RST) | (1 << TX_LED) | (RGB_G)  | (1 << OLED_CS) ;RST inactive, OLED CS inactive, Command mode, Tx LED off, RGB green off, Flash cart active
                         #else
-                            ldi     r24, (1 << OLED_RST) | (1 << TX_LED)  | (1 << CART_CS) ;RST inactive, CS active low, Command mode, Tx LED off, Flash cart inactive
+                            ldi     r24, (1 << OLED_RST) | (1 << TX_LED)  | (1 << OLED_CS) ;RST inactive, OLED CS inactive, Command mode, Tx LED off, Flash cart active
                         #endif
                             out     PORTD, r24
                             
@@ -2321,6 +2379,20 @@ SetupHardware_bootloader:
                             ldi     r24, 0x03           ;CS11 | CS10 1/64 prescaler on timer 1 input
                             sts     TCCR1B, r24
 
+                            ;clear full display ram for SSD132X displays
+                            
+                           #if defined (OLED_SSD132X_96X96) || (OLED_SSD132X_128X96) || (OLED_SSD132X_128X128)
+                            sbi     PORTD, OLED_DC              ;data mode
+                            ldi     r30,lo8(128 * 128 / 2)
+                            ldi     r31,hi8(128 * 128 / 2)
+SetupHardware_dc:                            
+                            ldi     r24, 0
+                            rcall   SPI_transfer
+                            sbiw    30, 1
+                            brne    SetupHardware_dc
+                            cbi     PORTD, OLED_DC              ;command mode
+                           #endif
+                           
                             ;Setup display
 
                             ldi     r30,lo8(DisplaySetupData)
@@ -2341,7 +2413,7 @@ DisplayBootGfx_l1:
                             ldi     r17, BOOTLOGO_WIDTH
 DisplayBootGfx_l2:
                             ld      r0, z+
-                            st      x+ ,r0
+                            st      x+, r0
                             dec     r17
                             brne    DisplayBootGfx_l2
                             subi    r26, -(128 - BOOTLOGO_WIDTH)    ;'adiw' to one line down
@@ -2455,7 +2527,6 @@ SPI_flash_cmd_addr:
                             rcall   SPI_transfer        ;address bits 23-16
                             mov     r24, r30
                             rcall   SPI_transfer
-SPI_transfer_00:
                             ldi     r24, 0x00           ;address bits 7-0
                             ;rjmp    SPI_transfer
 ;-------------------------------------------------------------------------------
@@ -2501,9 +2572,48 @@ Display:
 
 ;                       Uses:
 ;                           r24, r25, r30, r31
-
+                        #if defined(OLED_SSD132X_96X96)
+                            ldi     r30, lo8(DisplayBuffer + 16)
+                            ldi     r31, hi8(DisplayBuffer + 16)
+                        #else   
                             ldi     r30, lo8(DisplayBuffer)
                             ldi     r31, hi8(DisplayBuffer)
+                        #endif
+                        #if defined(OLED_SSD132X_96X96) || (OLED_SSD132X_128X96) || (OLED_SSD132X_128X128)
+                            sbi     PORTD, OLED_DC          ;ensure Data mode
+                          #if defined(OLED_SSD132X_96X96)
+                            ldi     r20, 96 / 2             ;visible width
+                          #else
+                            ldi     r20, WIDTH / 2
+                          #endif
+Display_column:
+                            ldi     r21, HEIGHT / 8
+Display_row:
+                            ld      r22, z
+                            ldd     r23, z+1
+                            ldi     r25, 8
+Display_shift:
+                            ldi     r24, 0xff       ;expand 1 bit to MSB 4 bits
+                            sbrs    r22, 0
+                            andi    r24, 0x0f
+                            sbrs    r23, 0          ;expand 1 bit to LSB 4 bits
+                            andi    r24, 0xf0
+                            rcall   SPI_transfer
+                            lsr     r22
+                            lsr     r23
+                            dec     r25
+                            brne    Display_shift
+
+                            subi     r30, lo8(-WIDTH)   ;add WIDTH
+                            sbci     r31, hi8(-WIDTH)
+                            dec      r21
+                            brne     Display_row
+
+                            subi     r30, lo8(HEIGHT / 8 * WIDTH - 2)
+                            sbci     r31, hi8(HEIGHT / 8 * WIDTH - 2)
+                            dec      r20
+                            brne     Display_column
+                        #else
                             ldi     r25, OLED_SET_PAGE_ADDR
 Display_l1:
                             cbi     PORTD, OLED_DC                  ;Command mode
@@ -2522,6 +2632,7 @@ Display_l2:
                             inc     r25
                             cpi     r25, OLED_SET_PAGE_ADDR + 8
                             brne    Display_l1
+                        #endif
                             ret
 ;-------------------------------------------------------------------------------
 LEDPulse:
@@ -2571,11 +2682,11 @@ LEDPulse_on:
                             brne    LEDPulse_on_b1
                             RGB_RED_ON
 LEDPulse_on_b1:
-                            cpi     r25,1
+                            cpi     r25, 1
                             brne    LEDPulse_on_b2
                             RGB_GREEN_ON
 LEDPulse_on_b2:
-                            cpi     r25,2
+                            cpi     r25, 2
                             brne    LEDPulse_on_b3          ;3: none lit
                             RGB_BLUE_ON
 LEDPulse_on_b3:
@@ -2667,9 +2778,24 @@ SelectGame:
 
 ;Note: select game may only be called after SelectList or successful LoadApplicationInfo
 
-                            rcall   LEDPulse_off
+                            lds     r24, LED_Control        ;test breating RGB LED disabled
+                            sbrs    r24, LED_CTRL_RGB
+                           #ifdef   LCD_ST7565
+                            RGB_RED_ON                      ;force white backlight for LCD display
+                            RGB_GREEN_ON
+                            RGB_BLUE_ON
+                           #else
+                            rcall   LEDPulse_off            ;turn them off if not disabled
+                           #endif
                             clr     r2                      ;clear bootloader timeout
                             clr     r3
+                        #if !defined (OLED_SSD132X_96X96) && !defined (OLED_SSD132X_128X96) && !defined (OLED_SSD132X_128X128)
+                            ldi     r30, lo8(IndexedVars)
+                            ldi     r31, hi8(IndexedVars)
+                            std     z+IDX_RGBLEDSTATE, r1
+                            std     z+IDX_LLEDPULSE_LSB, r1
+                            std     z+IDX_LLEDPULSE_MSB, r1
+                        #endif
                             ldi     r30, lo8(FlashBuffer)
                             ldi     r31, hi8(FlashBuffer)
                             lds     r24, Buttons
@@ -2768,7 +2894,7 @@ SelectList:
                             sbrc    r24, RIGHT_BUTTON
                             rjmp    SelectList_next
                             sbrs    r24, A_BUTTON       ;skip if pressed
-SelectList_ret:            ret                         ;return no left or right or A button
+SelectList_ret:             ret                         ;return no left or right or A button
 
                             ;run last application
 
@@ -2901,6 +3027,8 @@ SECTION_BSS_START:
                                     .equ    IDX_LEDCONTROL,     7
                                     .equ    IDX_RGBLEDSTATE,    8
                                     .equ    IDX_LLEDPULSE,      9
+                                    .equ    IDX_LLEDPULSE_LSB,  9
+                                    .equ    IDX_LLEDPULSE_MSB,  10
 IndexedVars:
 TxLEDPulse:                         .byte   0   ;| Note:  Do not change order of these vars
 RxLEDPulse:                         .byte   0   ;|
