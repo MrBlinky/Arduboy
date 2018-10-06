@@ -1,0 +1,8 @@
+gerbers suitable for Seeed Studio Fusion
+
+Rev 1.1:
+* First manufactured version
+
+Rev 1.2 changes: 
+* Fixed missing Silkscreen discription text
+* Fixed Blinky icon resolution
