@@ -1,0 +1,26 @@
+List;Discription;Title screen;Hex file;Data file;Save file
+0;Bootloader title;arduboyloader.png;;;
+1;Team ARG games title;team-arg-games\teamarglogo.png;;;
+1;Arduventure;team-arg-games\screenshot00.png;team-arg-games\ARDU_AB.ino-arduboy.hex;;
+1;Mystic Balloon;team-arg-games\mysticballoon.png;team-arg-games\MYBL_AB.ino-arduboy.hex;;
+1;Virus;team-arg-games\virus.png;team-arg-games\VLQP_AB.ino-arduboy.hex;;
+1;Sirene;team-arg-games\sirene.png;team-arg-games\SRN_AB.ino-arduboy.hex;;
+1;Begemmed;team-arg-games\begemmed.png;team-arg-games\BGEM_AB.ino-arduboy.hex;;
+1;Blob Attack;team-arg-games\blob-attack.png;team-arg-games\BLBA_AB.ino-arduboy.hex;;
+1;Shadow Runner;team-arg-games\shadow-runner.png;team-arg-games\SHRUN_AB.ino-arduboy.hex;;
+1;Reverse Mermaid Hockey;team-arg-games\reverse-mermaid-hockey.png;team-arg-games\RMH_AB.ino-arduboy.hex;;
+1;Dice of Fate;team-arg-games\dice-of-fate.png;team-arg-games\DICE_AB.ino-arduboy.hex;;
+1;Epic Crates of Mass Destruction;team-arg-games\ecomd.png;team-arg-games\ECOMD_AB.ino-arduboy.hex;;
+1;Fantasy Rampage;team-arg-games\fantasy-rampage.png;team-arg-games\FRMP_AB.ino-arduboy.hex;;
+1;Trolly Fish;team-arg-games\trollyfish.png;team-arg-games\FISH_AB.ino-arduboy.hex;;
+2;Crait games title;crait-games\title.png;;;
+2;Circuit Dude;crait-games\circuit-dude.png;crait-games\CircuitDude.ino-arduboy.hex;;
+2;Midnight Wild;crait-games\midnight-wild.png;crait-games\MidnightWild.ino-arduboy.hex;;
+3;Obono games title ;obono-games\Title.png;;;
+3;Hollow Seeker;obono-games\HollowSeeker.png;obono-games\hollow.ino-arduboy.hex;;
+3;Hopper;obono-games\Hopper.png;obono-games\hopper.ino-arduboy.hex;;
+3;Chie Magari Ita;obono-games\Chie-Magari-Ita.png;obono-games\chiemagari.ino-arduboy.hex;;
+3;Chri Bocchi Cat;obono-games\Chri-Bocchi-Cat.png;obono-games\chribocchi.ino-arduboy.hex;;
+4;CastleBoy;unlisted-games\CastleBoy-title.png;unlisted-games\CastleBoy.ino-arduboy.hex;;
+5;Flashcart test;demos\flashcart-test\flashcart-test-title.png;demos\flashcart-test\flashcart-test.hex;demos\flashcart-test\badapple-frames.bin;
+5;Hot butter;demos\HotButter_AB.png;demos\HotButter_AB.hex;;
