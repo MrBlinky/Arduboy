@@ -598,7 +598,7 @@
 
 #if DEVICE_VID == 0x2341
 #define MANUFACTURER_STRING     'A','r','d','u','i','n','o',' ','L','L','C'
-#elif DEVICE VID == 0x1B4F
+#elif DEVICE_VID == 0x1B4F
 #define MANUFACTURER_STRING     'S','p','a','r','k','F','u','n',' ',' ',' '
 #else
 #define MANUFACTURER_STRING     'U','n','k','n','o','w','n',' ',' ',' ',' '
@@ -2320,8 +2320,15 @@ SetupHardware:
                             out     PORTB, r24  
                             ldi     r24, 0xE7               ;RGBLED, SPI_CLK, MOSI, RXLED as outputs
                             out     DDRB, r24   
+                        #if defined (ARDUBIGBOY)
+                            ldi     r24, (1 << CART_CS)     ; Flash cart as output
+                            out     DDRE, r24
+                            ldi     r24, (1 << BTN_A_BIT) | (1 << CART_CS) ; Enable pullup for A button, Flash cart inactive high
+                            out     PORTE, r24
+                        #else
                             out     DDRE, r1                ;all as inputs
                             sbi     PORTE, BTN_A_BIT        ;enable pullup for A button
+                        #endif
                             out     DDRF, r1                ;all as inputs
                             ldi     r24, 0xF0               ;pullups on D-PAD
                             out     PORTF, r24
@@ -2338,6 +2345,11 @@ SetupHardware:
                             ldi     r24, (1 << OLED_CS) | (1 << TX_LED) | (1 << CART_CS) ;RST active low, CS inactive high, Command mode, Tx LED off, Flash cart inactive high. Power LED active low
                             out     PORTD, r24
                             ldi     r24, (1 << OLED_RST) | (1 << OLED_CS) | (1 << OLED_DC) | (1 << TX_LED) | (1 << CART_CS) | (1 << POWER_LED); as outputs
+                            out     DDRD, r24
+                        #elif defined (ARDUBIGBOY)
+                            ldi     r24, (1 << OLED_CS) | (1 << TX_LED); RST active low, CS inactive high, Command mode, Tx LED off
+                            out     PORTD, r24
+                            ldi     r24, (1 << OLED_RST) | (1 << OLED_CS) | (1 << OLED_DC) | (1 << TX_LED); as outputs
                             out     DDRD, r24
                         #else
                             ldi     r24, (1 << OLED_CS) | (1 << TX_LED) | (1 << CART_CS) ;RST active low, CS inactive high, Command mode, Tx LED off, Flash cart inactive high
@@ -2532,7 +2544,11 @@ SPI_flash_cmd_addr:
 ;-------------------------------------------------------------------------------
 SPI_flash_cmd:
                             sbi     PORTD, OLED_CS      ;disable display
+                        #if defined (ARDUBIGBOY)
+                            cbi     PORTE, CART_CS      ;enable SPI flash cart
+                        #else
                             cbi     PORTD, CART_CS      ;enable SPI flash cart
+                        #endif
                             rjmp    SPI_transfer        ;send command
 ;-------------------------------------------------------------------------------
 SPI_flash_wait:
@@ -2545,8 +2561,12 @@ SPI_flash_wait_2:           rcall   SPI_transfer        ;read status reg
                             ;rjmp   SPI_flash_deselect
 ;-------------------------------------------------------------------------------
 SPI_flash_deselect:
-                            sbi     PORTD, CART_CS          ;deselect SPI flash cart to complete command
-                            cbi     PORTD, OLED_CS          ;select display
+                        #if defined(ARDUBIGBOY)
+                            sbi     PORTE, CART_CS      ;deselect SPI flash cart to complete command
+                        #else
+                            sbi     PORTD, CART_CS      ;deselect SPI flash cart to complete command
+                        #endif
+                            cbi     PORTD, OLED_CS      ;select display
                             ret
 ;-------------------------------------------------------------------------------
 SPI_transfer_Z:
