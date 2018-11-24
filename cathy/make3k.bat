@@ -23,6 +23,8 @@ call :make arduboy3k-bootloader-st7565 "-DARDUBOY -DDEVICE_VID=0x2341 -DLCD_ST75
 call :make arduboy3k-bootloader-micro-st7565 "-DARDUBOY -DDEVICE_VID=0x2341 -DLCD_ST7565 -DDEVICE_PID=0x0037"
 call :make arduboy3k-bootloader-promicro-st7565 "-DARDUBOY -DARDUBOY_PROMICRO -DDEVICE_VID=0x2341 -DLCD_ST7565 -DDEVICE_PID=0x0036"
 
+call :make arduBigBOY-bootloader "-DARDUBOY -DARDUBIGBOY -DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
+
 @rem Arduino bootloaders (obselete due to cathy2k)
 @rem call :make cathy3k-leonardo "-DDEVICE_VID=0x2341 -DDEVICE_PID=0x0036"
 @rem call :make cathy3k-micro "-DDEVICE_VID=0x2341 -DDEVICE_PID=0x0037"
@@ -33,7 +35,7 @@ call :make arduboy3k-bootloader-promicro-st7565 "-DARDUBOY -DARDUBOY_PROMICRO -D
 :make
 @echo ________________________________________________________________________________
 avr-gcc -c -mmcu=atmega32u4 -I. -x assembler-with-cpp -o %1.o cathy3k.asm %~2
-avr-ld -T %AVR32_HOME%\avr\lib\ldscripts\avr5.x -Ttext=0x7400 -Tdata=0x800100 --section-start=.boot=0x7800 --section-start=.bootsignature=0x7ffc -o %1.elf %1.o
+avr-ld -T "%AVR32_HOME%\avr\lib\ldscripts\avr5.x" -Ttext=0x7400 -Tdata=0x800100 --section-start=.boot=0x7800 --section-start=.bootsignature=0x7ffc -o %1.elf %1.o
 @rem avr-objdump -D %1.elf > %1.bin.asm
 @rem avr-objcopy -O binary %1.elf %1.bin --gap-fill=0xff
 avr-objcopy -O ihex %1.elf cathy3k\%1.hex
