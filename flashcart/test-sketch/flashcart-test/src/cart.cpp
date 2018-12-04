@@ -25,7 +25,7 @@ void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page)
 }
 
 
-void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset = 0)
+void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset)
 {
   enableCart();
   cartTransfer(SFC_READ);
