@@ -26,11 +26,11 @@
 #define SFC_READ              0x03
 #define SFC_RELEASE_POWERDOWN 0xAB
 
-typedef struct {
+struct JedecID {
   uint8_t manufacturer;
   uint8_t device;
   uint8_t size;
-} JedecID;
+};
 
 #define disableOLED() CS_PORT    |=  (1 << CS_BIT)
 #define enableOLED()  CS_PORT    &= ~(1 << CS_BIT)
