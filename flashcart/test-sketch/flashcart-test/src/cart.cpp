@@ -34,7 +34,7 @@ void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset
   cartTransfer(offset);
   for (size_t i = 0; i < length; i++)
   {
-    buffer[i]=cartTransfer(0);
+    buffer[i] = cartTransfer(0);
   }
   disableCart();
 }
