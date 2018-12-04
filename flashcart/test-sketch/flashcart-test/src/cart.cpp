@@ -19,20 +19,20 @@ void cartWakeUp()
 }
 
 
-void cartReadBlock(uint8_t* buffer, uint16_t length, uint16_t page)
+void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page)
 {
   cartReadBlock(buffer, length, page, 0);
 }
 
 
-void cartReadBlock(uint8_t* buffer, uint16_t length, uint16_t page, uint8_t offset = 0)
+void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset = 0)
 {
   enableCart();
   cartTransfer(SFC_READ);
   cartTransfer(page >> 8);
   cartTransfer(page);
   cartTransfer(offset);
-  for (int i = 0; i < length; i++)
+  for (size_t i = 0; i < length; i++)
   {
     buffer[i]=cartTransfer(0);
   }

@@ -1,6 +1,9 @@
 #ifndef CART_H
 #define CART_H
 
+// Required for size_t
+#include <stddef.h>
+
 //Default cart space reserved for development
 #define CART_DEV_DATA_PAGE (0xFE0000 >> 8) /* 112K space (128K without using save) */
 #define CART_DEV_SAVE_PAGE (0xFFC000 >> 8) /* 16K space */
@@ -39,9 +42,9 @@ struct JedecID {
 
 void cartWakeUp();
 
-void cartReadBlock(uint8_t* buffer, uint16_t length, uint16_t page);
+void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page);
 
-void cartReadBlock(uint8_t* buffer, uint16_t length, uint16_t page, uint8_t offset);
+void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset);
 
 uint16_t cartGetDataPage();
 
