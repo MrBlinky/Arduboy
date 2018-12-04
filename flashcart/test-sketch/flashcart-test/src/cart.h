@@ -42,6 +42,18 @@ struct JedecID {
 
 void cartWakeUp();
 
+template< size_t size >
+void cartReadBlock(uint8_t (&buffer)[size], uint16_t page)
+{
+  cartReadBlock(buffer, size, page);
+}
+
+template< size_t size >
+void cartReadBlock(uint8_t (&buffer)[size], uint16_t page, uint8_t offset)
+{
+  cartReadBlock(buffer, size, page, offset);
+}
+
 void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page);
 
 void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset);
