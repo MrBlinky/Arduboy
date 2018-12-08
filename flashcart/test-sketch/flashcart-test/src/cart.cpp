@@ -6,7 +6,7 @@ uint8_t SPItransfer(uint8_t data)
 {
   SPDR = data;
   asm volatile("nop");
-  while ((SPSR & _BV(SPIF)) != 0);
+  while ((SPSR & _BV(SPIF)) == 0);
   return SPDR;
 }
 
