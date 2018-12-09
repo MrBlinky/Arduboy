@@ -1,6 +1,9 @@
 #ifndef CART_H
 #define CART_H
 
+// Required for size_t
+#include <stddef.h>
+
 //Default cart space reserved for development
 #define CART_DEV_DATA_PAGE (0xFE0000 >> 8) /* 112K space (128K without using save) */
 #define CART_DEV_SAVE_PAGE (0xFFC000 >> 8) /* 16K space */
@@ -26,11 +29,11 @@
 #define SFC_READ              0x03
 #define SFC_RELEASE_POWERDOWN 0xAB
 
-typedef struct {
+struct JedecID {
   uint8_t manufacturer;
   uint8_t device;
   uint8_t size;
-} JedecID;
+};
 
 #define disableOLED() CS_PORT    |=  (1 << CS_BIT)
 #define enableOLED()  CS_PORT    &= ~(1 << CS_BIT)
@@ -39,9 +42,21 @@ typedef struct {
 
 void cartWakeUp();
 
-void cartReadBlock(uint8_t* buffer, uint16_t length, uint16_t page);
+template< size_t size >
+void cartReadBlock(uint8_t (&buffer)[size], uint16_t page)
+{
+  cartReadBlock(buffer, size, page);
+}
 
-void cartReadBlock(uint8_t* buffer, uint16_t length, uint16_t page, uint8_t offset);
+template< size_t size >
+void cartReadBlock(uint8_t (&buffer)[size], uint16_t page, uint8_t offset)
+{
+  cartReadBlock(buffer, size, page, offset);
+}
+
+void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page);
+
+void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset);
 
 uint16_t cartGetDataPage();
 

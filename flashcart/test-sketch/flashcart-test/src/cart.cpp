@@ -6,7 +6,7 @@ uint8_t SPItransfer(uint8_t data)
 {
   SPDR = data;
   asm volatile("nop");
-  while (!(SPSR & _BV(SPIF)));
+  while ((SPSR & _BV(SPIF)) == 0);
   return SPDR;
 }
 
@@ -19,22 +19,22 @@ void cartWakeUp()
 }
 
 
-void cartReadBlock(uint8_t* buffer, uint16_t length, uint16_t page)
+void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page)
 {
   cartReadBlock(buffer, length, page, 0);
 }
 
 
-void cartReadBlock(uint8_t* buffer, uint16_t length, uint16_t page, uint8_t offset = 0)
+void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset)
 {
   enableCart();
   cartTransfer(SFC_READ);
   cartTransfer(page >> 8);
   cartTransfer(page);
   cartTransfer(offset);
-  for (int i = 0; i < length; i++)
+  for (size_t i = 0; i < length; i++)
   {
-    buffer[i]=cartTransfer(0);
+    buffer[i] = cartTransfer(0);
   }
   disableCart();
 }
