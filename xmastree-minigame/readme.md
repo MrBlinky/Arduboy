@@ -11,3 +11,9 @@ Try to complete the move in the least possible moves and your xmastree will be
 decorated with a bright star!
 
 HAPPY XMASTREE MOVING !
+
+#### Update
+
+Press the left or right button while switching on to activate greeting card
+mode. In greeting card mode a fully decorated xmastree is  in the room and the
+xmastree song is played.

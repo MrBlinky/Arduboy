@@ -111,7 +111,7 @@ void drawSlices(void)
 
 void drawXmasTree(void)
 {
-  if (starframe) 
+  if (starframe != 0) 
   {
     sprites.drawPlusMask(GFX_STAR_X + (cursor -1) * GFX_POLE_SPACING, GFX_STAR_Y, star_plus_mask, starframe);
     if (arduboy.everyXFrames(5)) 
@@ -126,3 +126,14 @@ void drawXmasTree(void)
   }
 }
 
+void drawBootLogo(void)
+{
+  for (int x = WIDTH; x >= ((WIDTH - BLINKYICON_WIDTH) / 2) ; x -= 2)
+  {
+    sprites.drawSelfMasked(x, 0 , blinkyicon,0);
+    if (x == (WIDTH - BLINKYICON_WIDTH) / 2) sprites.drawSelfMasked((WIDTH - BLINKYINFO_WIDTH) / 2 + 1, HEIGHT - BLINKYINFO_HEIGHT + 2, blinkyinfo,0);
+    arduboy.display(CLEAR_BUFFER);
+    arduboy.delayShort(15);    
+  }
+  arduboy.delayShort(1500);
+}

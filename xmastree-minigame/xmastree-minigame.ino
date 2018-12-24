@@ -71,6 +71,7 @@ struct slice_t
  int pole;
  int pos;
 };
+
 slice_t slices[SLICE_COUNT];
 byte sliceState;
 #define SS_IDLE  0
@@ -92,8 +93,15 @@ byte cardMode;
 
 void setup() 
 {
-  arduboy.begin();
   gameState = GS_IDLE;
+  arduboy.boot();
+  testCardMode();
+  arduboy.flashlight();
+  arduboy.systemButtons();
+  arduboy.audio.begin();
+  //arduboy.bootLogoSpritesSelfMasked();
+  drawBootLogo();
+  arduboy.waitNoButtons();
   arduboy.setFrameRate(30);
 }
 
@@ -113,5 +121,5 @@ void loop()
     case GS_END   : gameover(); break;
   }
   drawCursor();
-  arduboy.display(true);
+  arduboy.display(CLEAR_BUFFER);
 }

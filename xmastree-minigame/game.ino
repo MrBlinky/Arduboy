@@ -143,7 +143,7 @@ void play(void)
 
 void gameover(void)
 {
-  if (poles[2] != 0)return;
+  if (poles[2] != 0) return;
   
   if (arduboy.everyXFrames(45))
   {
@@ -154,19 +154,34 @@ void gameover(void)
                       else  
                         caption = CT_WELLDONE;
                       break;
-      case CT_XMAS  : caption = CT_MOVES;
+      case CT_XMAS  : if (cardMode == 0) caption = CT_MOVES;
                       break;
-      default       : caption = CT_XMAS; break;
+      default       : caption = CT_XMAS;
+                      break;
     }
   }
   drawXmasTree(); 
   if (!sound.playing()) sound.tones(xmastree_bgm);
-  if (!arduboy.buttonsState()) return; 
+  if (arduboy.buttonsState() == 0) return; 
 
-  while (arduboy.buttonsState());
+  while (arduboy.buttonsState() != 0);
   sound.noTone();
+  cardMode = 0;
   gameState = GS_IDLE;
   caption = 0;
   cursor = 0;
   for (byte i = 0; i < SLICE_COUNT; i++) slices [i] = {0, 0};
 }
+
+void testCardMode()
+{
+  if ((arduboy.buttonsState() & (UP_BUTTON | DOWN_BUTTON | LEFT_BUTTON | RIGHT_BUTTON)) != 0)
+  {
+    cardMode = 1;
+    poles[2]=0;
+    starframe = 1;
+    cursor = 3;
+    gameState = GS_END;
+  }
+}
+
