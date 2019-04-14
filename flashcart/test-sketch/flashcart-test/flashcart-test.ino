@@ -1,6 +1,6 @@
-/* **********************************************************
- * Flash cart test v1.0 by Mr.blinky 2018 licenced under MIT
- * **********************************************************
+/* *****************************************************************************
+ * Flash cart test v1.2 by Mr.Blinky 2018-2019 licenced under MIT
+ * *****************************************************************************
  * 
  * Press A button to view JEDEC ID
  * 
@@ -8,17 +8,27 @@
  * 
  * Note:
  * 
- * This sketch uses data stored on cart. To successfully locate the 
- * data on the cart, both sketch and data must be stored on the cart 
- * using the flasher tool and the sketch must be loaded (burned) by 
- * Cathy3K bootloader.
- *  
- * When uploading directly from Arduino IDE or a hex uploader. the 
- * animation option will show junk from the development cart space 
- * and beginning of cart space.
- * 
+ * This sketch uses data stored on flash cart. To successfully locate the data
+ * on the cart during development, set the page value from the flash writer tool
+ * at the ANIMATION_DATA_PAGE define below
  */
+
+// for badapple-frames animation
+//#define ANIMATION_DATA_PAGE 0xEE60 /* value given by flash writer tool */
+//#define ANIMATION_FRAMES 6572      /* number of 1K images in bin file  */
+//#define ANIMATION_FPS 30
  
+// for factory-frames animation
+//#define ANIMATION_DATA_PAGE 0xDCF0 /* value given by flash writer tool */
+//#define ANIMATION_FRAMES 2244      /* number of 1K images in bin file  */
+//#define ANIMATION_FPS 30
+
+//thedoor-frames
+#define ANIMATION_DATA_PAGE 0xE948 /* value given by flash writer tool */
+#define ANIMATION_FRAMES 1454      /* number of 1K images in bin file  */
+#define ANIMATION_FPS 15
+
+
 #include <Arduboy2.h>
 #include "src/cart.h"
 
@@ -35,12 +45,12 @@ void printHexByte(uint8_t b)
 
 void showJedecID()
 {
-  enableCart();
+  cartEnable();
   cartTransfer(SFC_JEDEC_ID);
   jedecID.manufacturer = cartTransfer(0);
   jedecID.device = cartTransfer(0);
   jedecID.size = cartTransfer(0);
-  disableCart();
+  cartDisable();
   
   arduboy.clear();
   arduboy.setCursor(18,32-8);
@@ -51,30 +61,26 @@ void showJedecID()
 
   arduboy.setCursor(30,32+8);
   arduboy.print(F("STATUS:"));
-  enableCart();
+  cartEnable();
   cartTransfer(SFC_READSTATUS2);
   printHexByte(cartTransfer(0));
-  disableCart();
+  cartDisable();
   
-  enableCart();
+  cartEnable();
   cartTransfer(SFC_READSTATUS1);
   printHexByte(cartTransfer(0));
-  disableCart();
+  cartDisable();
 }
 
 void showFrames()
 {
-  cartReadBlock(arduboy.sBuffer, 1024, cartGetDataPage() + 4 * frames); // 4 = 1K / 256 byte page
-//  arduboy.setCursor(0,0);
-//  arduboy.print("Frame:");
-//  arduboy.print(frames);
-  if (++frames == 6572) frames = 0; //number of frames in animation
+  cartReadDataBlock(arduboy.sBuffer, 1024, 4 * frames, 0); // 4 = 1K / 256 byte page
+  if (++frames == ANIMATION_FRAMES) frames = 0; //number of frames in animation
 }
-
 
 void setup() {
   arduboy.begin();
-  arduboy.setFrameRate(30);
+  arduboy.setFrameRate(ANIMATION_FPS);
   
   //show one time info
   arduboy.clear();
@@ -88,7 +94,7 @@ void setup() {
   arduboy.print(F("Mr. Blinky"));
     
   disableOLED(); //OLED must be disabled before using cart
-  cartWakeUp();  //cart may be in power down mode so wake it up (from cathy bootloader)
+  cartInit(ANIMATION_DATA_PAGE);  //cart may be in power down mode so wake it up (from cathy bootloader)
 }
 
 
@@ -112,6 +118,6 @@ void loop() {
   }
   enableOLED();// only enable OLED prior using display
   arduboy.display();
-  disableOLED();// no need to keep display enabled
+  disableOLED();// disable so flash cart can be used
 }
 

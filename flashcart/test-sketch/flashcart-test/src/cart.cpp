@@ -10,87 +10,138 @@ uint8_t SPItransfer(uint8_t data)
   return SPDR;
 }
 
+static uint16_t cartDataPage; // location of read only data for this program in flash
+static uint16_t cartSavePage; // location of read write data for this program in flash 
+
+
+void cartInit()
+{
+  cartWakeUp();
+}
+
+
+void cartInit(uint16_t datapage)
+{
+  if (pgm_read_word(CART_DATA_VECTOR) == CART_VECTOR_KEY)
+  {
+    cartDataPage = (pgm_read_byte(CART_DATA_PAGE) << 8) | pgm_read_byte(CART_DATA_PAGE + 1);
+  }
+  else 
+  {
+    cartDataPage = datapage;
+  }
+  cartWakeUp();
+}
+
+
+void cartInit(uint16_t datapage, uint16_t savepage)
+{
+  if (pgm_read_word(CART_DATA_VECTOR) == CART_VECTOR_KEY)
+  {
+    cartDataPage = (pgm_read_byte(CART_DATA_PAGE) << 8) | pgm_read_byte(CART_DATA_PAGE + 1);
+  }
+  else 
+  {
+    cartDataPage = datapage;
+  }
+  if (pgm_read_word(CART_SAVE_VECTOR) == CART_VECTOR_KEY)
+  {
+    cartSavePage = (pgm_read_byte(CART_SAVE_PAGE) << 8) | pgm_read_byte(CART_SAVE_PAGE + 1);
+  }
+  else 
+  {
+    cartSavePage = savepage;
+  }
+  cartWakeUp();
+}
+
+
+void cartWriteCommand(uint8_t command)
+{
+  cartEnable();
+  cartTransfer(command);
+  cartDisable();
+}
+
 
 void cartWakeUp()
 {
-  enableCart();
-  cartTransfer(SFC_RELEASE_POWERDOWN);
-  disableCart();
+  cartWriteCommand(SFC_RELEASE_POWERDOWN);
 }
 
 
-void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page)
+void cartSleep()
 {
-  cartReadBlock(buffer, length, page, 0);
+  cartWriteCommand(SFC_POWERDOWN);
 }
 
 
-void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset)
+void cartWriteEnable()
 {
-  enableCart();
-  cartTransfer(SFC_READ);
+  cartWriteCommand(SFC_WRITE_ENABLE);
+}
+
+
+void cartSeek(uint8_t command, uint16_t page, uint8_t offset)
+{
+  cartEnable();
+  cartTransfer(command);
   cartTransfer(page >> 8);
   cartTransfer(page);
   cartTransfer(offset);
+}
+
+
+void cartSeekData(uint16_t page, uint8_t offset)
+{
+  cartSeek(SFC_READ, cartDataPage + page, offset);
+}
+
+
+void cartSeekSave(uint16_t page, uint8_t offset)
+{
+  cartSeek(SFC_READ, cartSavePage + page, offset);
+}
+
+
+void cartReadBlock(uint8_t* buffer, size_t length)
+{
   for (size_t i = 0; i < length; i++)
   {
     buffer[i] = cartTransfer(0);
   }
-  disableCart();
+  cartDisable();
+}
+
+void cartReadDataBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset)
+{
+  cartSeekData(page, offset);
+  cartReadBlock(buffer, length);
 }
 
 
-uint16_t cartGetDataPage()
+void cartReadSaveBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset)
 {
-  uint16_t page;
-  //page = CART_DEV_DATA_PAGE;
-  //if (pgm_read_word(CART_DATA_VECTOR) == CART_VECTOR_KEY) page = (pgm_read_byte(CART_DATA_PAGE) << 8) | (pgm_read_byte(CART_DATA_PAGE + 1));
-  asm volatile(
-    "   ldi     r30,lo8(%[addr])            \n" 
-    "   ldi     r31,hi8(%[addr])            \n"
-    "   lpm     %A[page], z+                \n"
-    "   lpm     %B[page], z+                \n"
-    "   subi    %A[page], lo8(%[key])       \n" //check magic key if page has been set by flasher tool
-    "   sbci    %B[page], hi8(%[key])       \n"
-    "   ldi     %A[page], lo8(%[devpage])   \n" //page = CART_DEV_DATA_PAGE;
-    "   ldi     %B[page], hi8(%[devpage])   \n" 
-    "   brne    1f                          \n"
-    "   lpm     %B[page], z+                \n" //page = (pgm_read_byte(CART_DATA_PAGE) << 8) | (pgm_read_byte(CART_DATA_PAGE + 1));
-    "   lpm     %A[page], z+                \n"
-    "1:                                     \n"
-    : [page]    "=&d" (page)
-    : [devpage] ""    (CART_DEV_DATA_PAGE),
-      [addr]    ""    (CART_DATA_VECTOR),
-      [key]     ""    (CART_VECTOR_KEY)
-    : "r30", "r31"
-  );
-  return page;
+  cartSeekSave(page, offset);
+  cartReadBlock(buffer, length);
 }
 
 
-uint16_t cartGetSavePage()
+void  cartEraseSaveBlock(uint16_t page)
 {
-  uint16_t page;
-  //page = CART_DEV_SAVE_PAGE;
-  //if (pgm_read_word(CART_SAVE_VECTOR) == CART_VECTOR_KEY) page = (pgm_read_byte(CART_SAVE_PAGE) << 8) | (pgm_read_byte(CART_SAVE_PAGE + 1));
-  asm volatile(
-    "   ldi     r30,lo8(%[addr])            \n" 
-    "   ldi     r31,hi8(%[addr])            \n"
-    "   lpm     %A[page], z+                \n"
-    "   lpm     %B[page], z+                \n"
-    "   subi    %A[page], lo8(%[key])       \n" //check magic key if page has been set by flasher tool
-    "   sbci    %B[page], hi8(%[key])       \n"
-    "   ldi     %A[page], lo8(%[devpage])   \n" //page = CART_DEV_SAVE_PAGE;
-    "   ldi     %B[page], hi8(%[devpage])   \n" 
-    "   brne    1f                          \n"
-    "   lpm     %B[page], z+                \n" //page = (pgm_read_byte(CART_SAVE_PAGE) << 8) | (pgm_read_byte(CART_SAVE_PAGE + 1));
-    "   lpm     %A[page], z+                \n"
-    "1:                                     \n"
-    : [page]    "=&d" (page)
-    : [devpage] ""    (CART_DEV_SAVE_PAGE),
-      [addr]    ""    (CART_SAVE_VECTOR),
-      [key]     ""    (CART_VECTOR_KEY)
-    : "r30", "r31"
-  );
-  return page;
+  cartWriteEnable();
+  cartSeek(SFC_ERASE, cartSavePage + page, 0);
+  cartDisable();
+}
+
+
+void cartWriteSavePage(uint16_t page, uint8_t* buffer)
+{
+  cartWriteEnable();
+  cartSeek(SFC_WRITE, cartSavePage + page, 0);
+  for(uint8_t i = 0; i <= 255; i++)
+  {
+    cartTransfer(buffer[i]);
+  }  
+  cartDisable();
 }

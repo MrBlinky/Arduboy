@@ -4,11 +4,11 @@
 // Required for size_t
 #include <stddef.h>
 
-//Default cart space reserved for development
+//Default data and save cart space for development
 #define CART_DEV_DATA_PAGE (0xFE0000 >> 8) /* 112K space (128K without using save) */
 #define CART_DEV_SAVE_PAGE (0xFFC000 >> 8) /* 16K space */
 
-//sketch reserved cart space (page values set by flasher tool)
+//sketch data and save cart space (set by PC manager tool)
 #define CART_VECTOR_KEY  0x9518 /* RETI instruction used a magic key */
 #define CART_DATA_VECTOR 0x0014 /* reserved interrupt vector 5  area */
 #define CART_DATA_PAGE   0x0016
@@ -27,7 +27,11 @@
 #define SFC_READSTATUS1       0x05
 #define SFC_READSTATUS2       0x35
 #define SFC_READ              0x03
+#define SFC_WRITE_ENABLE      0x06
+#define SFC_WRITE             0x04
+#define SFC_ERASE             0x20
 #define SFC_RELEASE_POWERDOWN 0xAB
+#define SFC_POWERDOWN         0xB9
 
 struct JedecID {
   uint8_t manufacturer;
@@ -37,29 +41,61 @@ struct JedecID {
 
 #define disableOLED() CS_PORT    |=  (1 << CS_BIT)
 #define enableOLED()  CS_PORT    &= ~(1 << CS_BIT)
-#define enableCart()  CART_PORT  &= ~(1 << CART_BIT)
-#define disableCart() CART_PORT  |=  (1 << CART_BIT)
+#define cartEnable()  CART_PORT  &= ~(1 << CART_BIT)
+#define cartDisable() CART_PORT  |=  (1 << CART_BIT)
+
+void cartInit();
+
+void cartInit(uint16_t datapage);
+
+void cartInit(uint16_t datapage, uint16_t savepage);
+
+void cartWriteCommand(uint8_t command);
 
 void cartWakeUp();
 
-template< size_t size >
-void cartReadBlock(uint8_t (&buffer)[size], uint16_t page)
-{
-  cartReadBlock(buffer, size, page);
-}
+void cartSleep();
+
+void cartWriteEnable();
+
+void cartSeek(uint8_t command, uint16_t page);
+
+void cartSeek(uint8_t command, uint16_t page, uint8_t offset);
+
+void cartSeekData(uint16_t page);
+
+void cartSeekData(uint16_t page, uint8_t offset);
+
+void cartSeekSave(uint16_t page);
+
+void cartSeekSave(uint16_t page, uint8_t offset);
 
 template< size_t size >
-void cartReadBlock(uint8_t (&buffer)[size], uint16_t page, uint8_t offset)
+void cartReadBlock(uint8_t (&buffer)[size])
 {
-  cartReadBlock(buffer, size, page, offset);
+  cartReadBlock(buffer, size);
 }
 
-void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page);
+void cartReadBlock(uint8_t* buffer, size_t length);
 
-void cartReadBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset);
+template< size_t size >
+void cartReadDataBlock(uint8_t (&buffer)[size], uint16_t page, uint8_t offset)
+{
+  cartReadDataBlock(buffer, size, page, offset);
+}
 
-uint16_t cartGetDataPage();
+void cartReadDataBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset);
 
-uint16_t cartGetSavePage();
+template< size_t size >
+void cartReadSaveBlock(uint8_t (&buffer)[size], uint16_t page, uint8_t offset)
+{
+  cartReadSaveBlock(buffer, size, page, offset);
+}
+
+void cartReadSaveBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset);
+
+void cartEraseSaveBlock(uint16_t page);
+
+void cartWriteSavePage(uint16_t page, uint8_t* buffer);
 
 #endif
