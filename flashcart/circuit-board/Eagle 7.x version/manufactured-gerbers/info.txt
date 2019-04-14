@@ -1,5 +1,7 @@
 gerbers suitable for Seeed Studio Fusion
 
+Using a board thickness of 0.8mm is recommended
+
 Rev 1.1:
 * First manufactured version
 
