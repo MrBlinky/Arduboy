@@ -1,147 +1,177 @@
 #include <Arduboy2.h>
 #include "cart.h"
 
-//only used when Arduboy2 library doesn't return SPDR
-uint8_t SPItransfer(uint8_t data)
+static uint16_t Cart::programDataPage; // program read only data location in flash memory
+static uint16_t Cart::programSavePage; // program read and write data location in flash memory
+
+void Cart::enable()
 {
+  CART_PORT  &= ~(1 << CART_BIT);
+}
+
+
+void Cart::disable()
+{
+  CART_PORT  |=  (1 << CART_BIT);
+}
+
+
+uint8_t Cart::write(uint8_t data)
+{
+ #if defined USE_ARDUBOY2_SPITRANSFER
+  return Arduboy2Base::SPItransfer(data);    
+ #else
   SPDR = data;
   asm volatile("nop");
   while ((SPSR & _BV(SPIF)) == 0);
   return SPDR;
+ #endif
 }
 
-static uint16_t cartDataPage; // location of read only data for this program in flash
-static uint16_t cartSavePage; // location of read write data for this program in flash 
 
-
-void cartInit()
+uint8_t Cart::read()
 {
-  cartWakeUp();
+  return write(0);
 }
 
-
-void cartInit(uint16_t datapage)
+uint16_t Cart::readWord()
 {
-  if (pgm_read_word(CART_DATA_VECTOR) == CART_VECTOR_KEY)
-  {
-    cartDataPage = (pgm_read_byte(CART_DATA_PAGE) << 8) | pgm_read_byte(CART_DATA_PAGE + 1);
-  }
-  else 
-  {
-    cartDataPage = datapage;
-  }
-  cartWakeUp();
+  uint8_t lsb = read();
+  return ((uint16_t)read() << 8) | lsb;
 }
 
 
-void cartInit(uint16_t datapage, uint16_t savepage)
+void Cart::init()
+{
+  wakeUp();
+}
+
+
+void Cart::init(uint16_t developmentDataPage)
 {
   if (pgm_read_word(CART_DATA_VECTOR) == CART_VECTOR_KEY)
   {
-    cartDataPage = (pgm_read_byte(CART_DATA_PAGE) << 8) | pgm_read_byte(CART_DATA_PAGE + 1);
+    programDataPage = (pgm_read_byte(CART_DATA_PAGE) << 8) | pgm_read_byte(CART_DATA_PAGE + 1);
   }
   else 
   {
-    cartDataPage = datapage;
+    programDataPage = developmentDataPage;
+  }
+  wakeUp();
+}
+
+
+void Cart::init(uint16_t developmentDataPage, uint16_t developmentSavePage)
+{
+  if (pgm_read_word(CART_DATA_VECTOR) == CART_VECTOR_KEY)
+  {
+    programDataPage = (pgm_read_byte(CART_DATA_PAGE) << 8) | pgm_read_byte(CART_DATA_PAGE + 1);
+  }
+  else 
+  {
+    programDataPage = developmentDataPage;
   }
   if (pgm_read_word(CART_SAVE_VECTOR) == CART_VECTOR_KEY)
   {
-    cartSavePage = (pgm_read_byte(CART_SAVE_PAGE) << 8) | pgm_read_byte(CART_SAVE_PAGE + 1);
+    programSavePage = (pgm_read_byte(CART_SAVE_PAGE) << 8) | pgm_read_byte(CART_SAVE_PAGE + 1);
   }
   else 
   {
-    cartSavePage = savepage;
+    programSavePage = developmentSavePage;
   }
-  cartWakeUp();
+  wakeUp();
 }
 
 
-void cartWriteCommand(uint8_t command)
+void Cart::writeCommand(uint8_t command)
 {
-  cartEnable();
-  cartTransfer(command);
-  cartDisable();
+  enable();
+  write(command);
+  disable();
 }
 
 
-void cartWakeUp()
+void Cart::wakeUp()
 {
-  cartWriteCommand(SFC_RELEASE_POWERDOWN);
+  writeCommand(SFC_RELEASE_POWERDOWN);
 }
 
 
-void cartSleep()
+void Cart::sleep()
 {
-  cartWriteCommand(SFC_POWERDOWN);
+  writeCommand(SFC_POWERDOWN);
 }
 
 
-void cartWriteEnable()
+void Cart::writeEnable()
 {
-  cartWriteCommand(SFC_WRITE_ENABLE);
+  writeCommand(SFC_WRITE_ENABLE);
 }
 
 
-void cartSeek(uint8_t command, uint16_t page, uint8_t offset)
+void Cart::seek(uint8_t command, __uint24 pageAddress)
 {
-  cartEnable();
-  cartTransfer(command);
-  cartTransfer(page >> 8);
-  cartTransfer(page);
-  cartTransfer(offset);
+  enable();
+  write(command);
+  write(pageAddress >> 16);
+  write(pageAddress >> 8);
+  write(pageAddress);
 }
 
 
-void cartSeekData(uint16_t page, uint8_t offset)
+void Cart::seekData(__uint24 pageAddress)
 {
-  cartSeek(SFC_READ, cartDataPage + page, offset);
+  seek(SFC_READ, ((__uint24)programDataPage << 8) + pageAddress);
 }
 
 
-void cartSeekSave(uint16_t page, uint8_t offset)
+void Cart::seekSave(__uint24 pageAddress)
 {
-  cartSeek(SFC_READ, cartSavePage + page, offset);
+  seek(SFC_READ, ((__uint24)programSavePage << 8) + pageAddress);
 }
 
 
-void cartReadBlock(uint8_t* buffer, size_t length)
+void Cart::readBytes(uint8_t* buffer, size_t length)
 {
   for (size_t i = 0; i < length; i++)
   {
-    buffer[i] = cartTransfer(0);
+    buffer[i] = read();
   }
-  cartDisable();
-}
-
-void cartReadDataBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset)
-{
-  cartSeekData(page, offset);
-  cartReadBlock(buffer, length);
 }
 
 
-void cartReadSaveBlock(uint8_t* buffer, size_t length, uint16_t page, uint8_t offset)
+void Cart::readDataBlock(uint8_t* buffer, size_t length, __uint24 pageAddress)
 {
-  cartSeekSave(page, offset);
-  cartReadBlock(buffer, length);
+  seekData(pageAddress);
+  readBytes(buffer, length);
+  disable();
 }
 
 
-void  cartEraseSaveBlock(uint16_t page)
+void Cart::readSaveBlock(uint8_t* buffer, size_t length, __uint24 pageAddress)
 {
-  cartWriteEnable();
-  cartSeek(SFC_ERASE, cartSavePage + page, 0);
-  cartDisable();
+  seekSave(pageAddress);
+  readBytes(buffer, length);
+  disable();
+}
+
+void  Cart::eraseSaveBlock(uint16_t page)
+{
+  writeEnable();
+  seek(SFC_ERASE, (__uint24)(programSavePage + page) << 8);
+  disable();
 }
 
 
-void cartWriteSavePage(uint16_t page, uint8_t* buffer)
+void Cart::writeSavePage(uint16_t page, uint8_t* buffer)
 {
-  cartWriteEnable();
-  cartSeek(SFC_WRITE, cartSavePage + page, 0);
-  for(uint8_t i = 0; i <= 255; i++)
+  writeEnable();
+  seek(SFC_WRITE, (__uint24)(programSavePage + page) << 8);
+  uint8_t i = 0;
+  do 
   {
-    cartTransfer(buffer[i]);
-  }  
-  cartDisable();
+    write(buffer[i]);
+  }
+  while (i++ < 255);
+  disable();
 }
