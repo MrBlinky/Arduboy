@@ -35,7 +35,7 @@
 Arduboy2 arduboy;
 uint8_t  state;
 JedecID  jedecID;
-uint16_t frames;
+__int24  frames;
 
 void printHexByte(uint8_t b)
 {
@@ -74,6 +74,7 @@ void showJedecID()
 
 void showFrames()
 {
+  asm volatile("dbg:\n");
   Cart::readDataBlock(arduboy.sBuffer, 1024, frames * 1024);
   if (++frames == ANIMATION_FRAMES) frames = 0; //number of frames in animation
 }
