@@ -1,8 +1,8 @@
 #include <Arduboy2.h>
 #include "cart.h"
 
-static uint16_t Cart::programDataPage; // program read only data location in flash memory
-static uint16_t Cart::programSavePage; // program read and write data location in flash memory
+uint16_t Cart::programDataPage; // program read only data location in flash memory
+uint16_t Cart::programSavePage; // program read and write data location in flash memory
 
 void Cart::enable()
 {
@@ -18,8 +18,8 @@ void Cart::disable()
 
 uint8_t Cart::write(uint8_t data)
 {
- #if defined USE_ARDUBOY2_SPITRANSFER
-  return Arduboy2Base::SPItransfer(data);    
+ #ifdef USE_ARDUBOY2_SPITRANSFER
+  return Arduboy2Base::SPItransfer(data);
  #else
   SPDR = data;
   asm volatile("nop");
@@ -31,29 +31,90 @@ uint8_t Cart::write(uint8_t data)
 
 uint8_t Cart::read()
 {
+ #ifdef ARDUINO_ARCH_AVR
+  asm volatile("cart_cpp_read:\n");//create label for calls in Cart::readUInt16
+ #endif
   return write(0);
 }
 
-uint16_t Cart::readWord()
+uint16_t Cart::readUInt16()
 {
-  uint8_t lsb = read();
-  return ((uint16_t)read() << 8) | lsb;
+  uint16_t value;
+ #ifdef ARDUINO_ARCH_AVR //Assembly implementation for AVR platform
+  asm volatile
+  ( "cart_cpp_readUInt16: \n"
+    "call cart_cpp_read   \n" 
+    "mov  %B[val], r24    \n"
+    "call cart_cpp_read   \n"
+    "mov  %A[val], r24    \n"
+    : [val] "=&r" (value)
+    : "" (read)
+    : //not specifying r24 here so r25:r24 can be assigned to value
+  );
+  return value;
+ #else //C++ implementation for non AVR platforms
+  value = read();
+  return (value << 8) | read();
+ #endif
 }
 
+uint24_t Cart::readUInt24()
+{
+  uint24_t value;
+ #ifdef ARDUINO_ARCH_AVR //Assembly implementation for AVR platform
+  asm volatile
+  ( "                         \n"
+    "call cart_cpp_readUInt16 \n" 
+    "mov  %C[val], r25        \n"
+    "mov  %B[val], r24        \n"
+    "call cart_cpp_read       \n"
+    "mov  %A[val], r24        \n"
+    : [val] "=&r" (value)
+    : "" (readUInt16),
+      "" (read)
+    : //not specifying r24:r25 here so r26:r25:r24 can be assigned to value
+  );
+  return value;
+ #else //C++ implementation for non AVR platforms
+  value = readUInt16();
+  return (value << 8) | read();
+ #endif
+}
 
-void Cart::init()
+uint32_t Cart::readUInt32()
+{
+  uint32_t value;
+ #ifdef ARDUINO_ARCH_AVR //Assembly implementation for AVR platform
+  asm volatile
+  ( 
+    "call cart_cpp_readUInt16   \n" 
+    "movw  %C[val], r24         \n"
+    "call cart_cpp_readUInt16   \n" 
+    "movw  %A[val], r24         \n"
+    : [val] "=&r" (value)
+    : "" (readUInt16)
+    : //not specifying r24:r25 here so r27:r26:r25:r24 can be assigned to value
+  );
+  return value;
+ #else //C++ implementation for non AVR platforms
+  value = read();
+  return (value << 8) | read();
+ #endif
+}
+
+void Cart::begin()
 {
   wakeUp();
 }
 
 
-void Cart::init(uint16_t developmentDataPage)
+void Cart::begin(uint16_t developmentDataPage)
 {
   if (pgm_read_word(CART_DATA_VECTOR) == CART_VECTOR_KEY)
   {
     programDataPage = (pgm_read_byte(CART_DATA_PAGE) << 8) | pgm_read_byte(CART_DATA_PAGE + 1);
   }
-  else 
+  else
   {
     programDataPage = developmentDataPage;
   }
@@ -61,13 +122,13 @@ void Cart::init(uint16_t developmentDataPage)
 }
 
 
-void Cart::init(uint16_t developmentDataPage, uint16_t developmentSavePage)
+void Cart::begin(uint16_t developmentDataPage, uint16_t developmentSavePage)
 {
   if (pgm_read_word(CART_DATA_VECTOR) == CART_VECTOR_KEY)
   {
     programDataPage = (pgm_read_byte(CART_DATA_PAGE) << 8) | pgm_read_byte(CART_DATA_PAGE + 1);
   }
-  else 
+  else
   {
     programDataPage = developmentDataPage;
   }
@@ -75,7 +136,7 @@ void Cart::init(uint16_t developmentDataPage, uint16_t developmentSavePage)
   {
     programSavePage = (pgm_read_byte(CART_SAVE_PAGE) << 8) | pgm_read_byte(CART_SAVE_PAGE + 1);
   }
-  else 
+  else
   {
     programSavePage = developmentSavePage;
   }
@@ -109,7 +170,7 @@ void Cart::writeEnable()
 }
 
 
-void Cart::seek(uint8_t command, __uint24 pageAddress)
+void Cart::seekCommand(uint8_t command, uint24_t pageAddress)
 {
   enable();
   write(command);
@@ -119,15 +180,15 @@ void Cart::seek(uint8_t command, __uint24 pageAddress)
 }
 
 
-void Cart::seekData(__uint24 pageAddress)
+void Cart::seekData(uint24_t pageAddress)
 {
-  seek(SFC_READ, ((__uint24)programDataPage << 8) + pageAddress);
+  seekCommand(SFC_READ, ((uint24_t)programDataPage << 8) + pageAddress);
 }
 
 
-void Cart::seekSave(__uint24 pageAddress)
+void Cart::seekSave(uint24_t pageAddress)
 {
-  seek(SFC_READ, ((__uint24)programSavePage << 8) + pageAddress);
+  seekCommand(SFC_READ, ((uint24_t)programSavePage << 8) + pageAddress);
 }
 
 
@@ -140,7 +201,7 @@ void Cart::readBytes(uint8_t* buffer, size_t length)
 }
 
 
-void Cart::readDataBlock(uint8_t* buffer, size_t length, __uint24 pageAddress)
+void Cart::readDataBlock(uint24_t pageAddress, uint8_t* buffer, size_t length)
 {
   seekData(pageAddress);
   readBytes(buffer, length);
@@ -148,7 +209,7 @@ void Cart::readDataBlock(uint8_t* buffer, size_t length, __uint24 pageAddress)
 }
 
 
-void Cart::readSaveBlock(uint8_t* buffer, size_t length, __uint24 pageAddress)
+void Cart::readSaveBlock(uint24_t pageAddress, uint8_t* buffer, size_t length)
 {
   seekSave(pageAddress);
   readBytes(buffer, length);
@@ -158,7 +219,7 @@ void Cart::readSaveBlock(uint8_t* buffer, size_t length, __uint24 pageAddress)
 void  Cart::eraseSaveBlock(uint16_t page)
 {
   writeEnable();
-  seek(SFC_ERASE, (__uint24)(programSavePage + page) << 8);
+  seekCommand(SFC_ERASE, (uint24_t)(programSavePage + page) << 8);
   disable();
 }
 
@@ -166,9 +227,9 @@ void  Cart::eraseSaveBlock(uint16_t page)
 void Cart::writeSavePage(uint16_t page, uint8_t* buffer)
 {
   writeEnable();
-  seek(SFC_WRITE, (__uint24)(programSavePage + page) << 8);
+  seekCommand(SFC_WRITE, (uint24_t)(programSavePage + page) << 8);
   uint8_t i = 0;
-  do 
+  do
   {
     write(buffer[i]);
   }

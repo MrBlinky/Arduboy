@@ -35,7 +35,7 @@
 Arduboy2 arduboy;
 uint8_t  state;
 JedecID  jedecID;
-__int24  frames;
+uint16_t frames;
 
 void printHexByte(uint8_t b)
 {
@@ -44,7 +44,7 @@ void printHexByte(uint8_t b)
 }
 
 void showJedecID()
-{
+{ //Read flash chip ID and print it to screen
   Cart::enable();
   Cart::write(SFC_JEDEC_ID);
   jedecID.manufacturer = Cart::read();
@@ -74,8 +74,8 @@ void showJedecID()
 
 void showFrames()
 {
-  asm volatile("dbg:\n");
-  Cart::readDataBlock(arduboy.sBuffer, 1024, frames * 1024);
+  //loads 1K images from flash to display buffer  
+  Cart::readDataBlock((uint24_t)frames * 1024, arduboy.sBuffer, 1024);
   if (++frames == ANIMATION_FRAMES) frames = 0; //number of frames in animation
 }
 
@@ -95,7 +95,8 @@ void setup() {
   arduboy.print(F("Mr. Blinky"));
     
   disableOLED(); //OLED must be disabled before using cart
-  Cart::init(ANIMATION_DATA_PAGE);  //cart may be in power down mode so wake it up (from cathy bootloader)
+  Cart::begin(ANIMATION_DATA_PAGE);  //cart may be in power down mode so wake it up (from cathy bootloader)
+                                     //Also set the  program data flash page number for development / uploading through Arduino IDE
 }
 
 
@@ -121,4 +122,3 @@ void loop() {
   arduboy.display();
   disableOLED();// disable so flash cart can be used
 }
-
