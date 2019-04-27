@@ -32,75 +32,11 @@ uint8_t Cart::write(uint8_t data)
 uint8_t Cart::read()
 {
  #ifdef ARDUINO_ARCH_AVR
-  asm volatile("cart_cpp_read:\n");//create label for calls in Cart::readUInt16
+  asm volatile("cart_cpp_read:\n"); // create label for calls in Cart::readAheadUInt16
  #endif
   return write(0);
 }
 
-uint16_t Cart::readUInt16()
-{
-  uint16_t value;
- #ifdef ARDUINO_ARCH_AVR //Assembly implementation for AVR platform
-  asm volatile
-  ( "cart_cpp_readUInt16: \n"
-    "call cart_cpp_read   \n" 
-    "mov  %B[val], r24    \n"
-    "call cart_cpp_read   \n"
-    "mov  %A[val], r24    \n"
-    : [val] "=&r" (value)
-    : "" (read)
-    : //not specifying r24 here so r25:r24 can be assigned to value
-  );
-  return value;
- #else //C++ implementation for non AVR platforms
-  value = read();
-  return (value << 8) | read();
- #endif
-}
-
-uint24_t Cart::readUInt24()
-{
-  uint24_t value;
- #ifdef ARDUINO_ARCH_AVR //Assembly implementation for AVR platform
-  asm volatile
-  ( "                         \n"
-    "call cart_cpp_readUInt16 \n" 
-    "mov  %C[val], r25        \n"
-    "mov  %B[val], r24        \n"
-    "call cart_cpp_read       \n"
-    "mov  %A[val], r24        \n"
-    : [val] "=&r" (value)
-    : "" (readUInt16),
-      "" (read)
-    : //not specifying r24:r25 here so r26:r25:r24 can be assigned to value
-  );
-  return value;
- #else //C++ implementation for non AVR platforms
-  value = readUInt16();
-  return (value << 8) | read();
- #endif
-}
-
-uint32_t Cart::readUInt32()
-{
-  uint32_t value;
- #ifdef ARDUINO_ARCH_AVR //Assembly implementation for AVR platform
-  asm volatile
-  ( 
-    "call cart_cpp_readUInt16   \n" 
-    "movw  %C[val], r24         \n"
-    "call cart_cpp_readUInt16   \n" 
-    "movw  %A[val], r24         \n"
-    : [val] "=&r" (value)
-    : "" (readUInt16)
-    : //not specifying r24:r25 here so r27:r26:r25:r24 can be assigned to value
-  );
-  return value;
- #else //C++ implementation for non AVR platforms
-  value = read();
-  return (value << 8) | read();
- #endif
-}
 
 void Cart::begin()
 {
@@ -170,25 +106,109 @@ void Cart::writeEnable()
 }
 
 
-void Cart::seekCommand(uint8_t command, uint24_t pageAddress)
+void Cart::seekCommand(uint8_t command, uint24_t address)
 {
   enable();
   write(command);
-  write(pageAddress >> 16);
-  write(pageAddress >> 8);
-  write(pageAddress);
+  write(address >> 16);
+  write(address >> 8);
+  write(address);
 }
 
 
-void Cart::seekData(uint24_t pageAddress)
+void Cart::seekData(uint24_t address)
 {
-  seekCommand(SFC_READ, ((uint24_t)programDataPage << 8) + pageAddress);
+  seekCommand(SFC_READ, ((uint24_t)programDataPage << 8) + address);
+  SPDR = 0;
 }
 
 
-void Cart::seekSave(uint24_t pageAddress)
+void Cart::seekSave(uint24_t address)
 {
-  seekCommand(SFC_READ, ((uint24_t)programSavePage << 8) + pageAddress);
+  seekCommand(SFC_READ, ((uint24_t)programSavePage << 8) + address);
+  SPDR = 0;
+}
+
+
+uint8_t readUnsafe()
+{
+  uint8_t result = SPDR;
+  SPDR = 0;
+  return result;
+}
+
+
+uint8_t Cart::readAheadUInt8()
+{
+ #ifdef ARDUINO_ARCH_AVR
+  asm volatile("cart_cpp_readAheadUInt8:\n"); // create label for calls in Cart::readAheadUInt16
+ #endif
+  while ((SPSR & _BV(SPIF)) == 0);
+  uint8_t result = SPDR;
+  SPDR = 0;
+  return result;
+}
+
+
+uint16_t Cart::readAheadUInt16()
+{
+ #ifdef xARDUINO_ARCH_AVR // Assembly implementation for AVR platform
+  uint16_t result asm("r24"); // we want result to be assigned to r24,r25
+  asm volatile
+  ( "cart_cpp_readAheadUInt16:      \n"
+    "call cart_cpp_readAheadUInt8   \n" 
+    "mov  %B[val], r24              \n"
+    "call cart_cpp_readAheadUInt8   \n"
+    : [val] "=&r" (result)
+    : "" (readAheadUInt8)
+    :
+  );
+  return result;
+ #else //C++ implementation for non AVR platforms
+  return ((uint16_t)read() << 8) | (uint16_t)read();
+ #endif
+}
+
+
+uint24_t Cart::readAheadUInt24()
+{
+ #ifdef ARDUINO_ARCH_AVR // Assembly implementation for AVR platform
+  uint24_t result asm("r24"); // we want result to be assigned to r24,r25,r26
+  asm volatile
+  ( 
+    "call cart_cpp_readAheadUInt16  \n" 
+    "mov  %C[val], r25              \n"
+    "mov  %B[val], r24              \n"
+    "call cart_cpp_readAheadUInt8   \n"
+    : [val] "=&r" (result)
+    : "" (readAheadUInt16),
+      "" (readAheadUInt8)
+    :
+  );
+  return result;
+ #else //C++ implementation for non AVR platforms
+  return ((uint24_t)readAheadUInt16() << 8) | read();
+ #endif
+}
+
+
+uint32_t Cart::readAheadUInt32()
+{
+ #ifdef ARDUINO_ARCH_AVR //Assembly implementation for AVR platform
+  uint32_t result asm("r24"); // we want result to be assigned to r24,r25,r26,r27
+  asm volatile
+  ( 
+    "call cart_cpp_readAheadUInt16   \n" 
+    "movw  %C[val], r24             \n"
+    "call cart_cpp_readAheadUInt16   \n" 
+    : [val] "=&r" (result)
+    : "" (readAheadUInt16)
+    : 
+  );
+  return result;
+ #else //C++ implementation for non AVR platforms
+  return ((uint32_t)readAheadUInt16() << 16) | readAheadUInt16();
+ #endif
 }
 
 
@@ -196,22 +216,27 @@ void Cart::readBytes(uint8_t* buffer, size_t length)
 {
   for (size_t i = 0; i < length; i++)
   {
-    buffer[i] = read();
+    buffer[i] = readAheadUInt8();
   }
 }
 
-
-void Cart::readDataBlock(uint24_t pageAddress, uint8_t* buffer, size_t length)
+void Cart::readEnd()
 {
-  seekData(pageAddress);
+  while ((SPSR & _BV(SPIF)) == 0); // wait for a pending read to complete
+  disable();
+}
+
+void Cart::readDataBlock(uint24_t address, uint8_t* buffer, size_t length)
+{
+  seekData(address);
   readBytes(buffer, length);
   disable();
 }
 
 
-void Cart::readSaveBlock(uint24_t pageAddress, uint8_t* buffer, size_t length)
+void Cart::readSaveBlock(uint24_t address, uint8_t* buffer, size_t length)
 {
-  seekSave(pageAddress);
+  seekSave(address);
   readBytes(buffer, length);
   disable();
 }
@@ -235,4 +260,8 @@ void Cart::writeSavePage(uint16_t page, uint8_t* buffer)
   }
   while (i++ < 255);
   disable();
+}
+
+void Cart::drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uint8_t mode)
+{
 }

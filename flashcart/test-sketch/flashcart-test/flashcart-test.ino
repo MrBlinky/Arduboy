@@ -77,6 +77,7 @@ void showFrames()
   //loads 1K images from flash to display buffer  
   Cart::readDataBlock((uint24_t)frames * 1024, arduboy.sBuffer, 1024);
   if (++frames == ANIMATION_FRAMES) frames = 0; //number of frames in animation
+  //uint16_t i = Cart::readUInt16();
 }
 
 void setup() {
@@ -94,9 +95,9 @@ void setup() {
   arduboy.setCursor(30,56);
   arduboy.print(F("Mr. Blinky"));
     
-  disableOLED(); //OLED must be disabled before using cart
-  Cart::begin(ANIMATION_DATA_PAGE);  //cart may be in power down mode so wake it up (from cathy bootloader)
-                                     //Also set the  program data flash page number for development / uploading through Arduino IDE
+  disableOLED(); //OLED must be disabled before cart can be used. OLED display should only be enabled prior updating the display.
+  Cart::begin(ANIMATION_DATA_PAGE);  //cart may be in power down mode so wake it up (Cathy bootloader puts cart into powerdown mode)
+                                     //and set the program data flash page for development / uploading through Arduino IDE
 }
 
 

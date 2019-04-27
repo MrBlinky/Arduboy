@@ -32,6 +32,7 @@ constexpr uint8_t SFC_ERASE             = 0x20;
 constexpr uint8_t SFC_RELEASE_POWERDOWN = 0xAB;
 constexpr uint8_t SFC_POWERDOWN         = 0xB9;
 
+
 using uint24_t = __uint24;
 
 struct JedecID
@@ -56,13 +57,7 @@ class Cart
 
     static uint8_t write(uint8_t data);
 
-    static uint8_t read(); //read a byte from the current flash location
-
-    static uint16_t readUInt16(); //read a 16-bit word from the current flash location (big endian)
-    
-    static uint24_t readUInt24(); //read a 24-bit word from the current flash location (big endian)
-    
-    static uint32_t readUInt32(); //read a 32-bit word from the current flash location (big endian)
+    static uint8_t read(); //read a single byte from flash memory
 
     static void begin(); // Initializes flash memory. Use only when program does not require data and save areas in flash memory
 
@@ -80,11 +75,23 @@ class Cart
 
     static void seekCommand(uint8_t command, uint24_t pageAddress);// Write command and selects flash memory address. Required by any read or write command
 
-    static void seekData(uint24_t pageAddress); // selects flashaddress of program data area for reading
+    static void seekData(uint24_t pageAddress); // selects flashaddress of program data area for reading and starts the first read
 
-    static void seekSave(uint24_t pageAddress); // selects flashaddress of program save area for reading
-
+    static void seekSave(uint24_t pageAddress); // selects flashaddress of program save area for reading and starts the first read
+    
+    static uint8_t readUnsave() __attribute__((always_inline)); // read flash data without performing any checks and starts the next read.
+    
+    static uint8_t readAheadUInt8();    //read a prefetched byte from the current flash location
+    
+    static uint16_t readAheadUInt16(); //read a partly prefetched 16-bit word from the current flash location
+    
+    static uint24_t readAheadUInt24(); //read a partly prefetched 24-bit word from the current flash location
+    
+    static uint32_t readAheadUInt32(); //read a partly prefetched a 32-bit word from the current flash location
+    
     static void readBytes(uint8_t* buffer, size_t length);// read a number of bytes from the current flash location
+    
+    static void readEnd();
 
     static void readDataBlock(uint24_t pageAddress, uint8_t* buffer, size_t length);
 
@@ -93,6 +100,8 @@ class Cart
     static void eraseSaveBlock(uint16_t page);
 
     static void writeSavePage(uint16_t page, uint8_t* buffer);
+
+    static void drawBitmap(int16_t x, int16_t y, uint24_t pageAddress, uint8_t frame, uint8_t mode);
 
     static uint16_t programDataPage; // program read only data area in flash memory
     static uint16_t programSavePage; // program read and write data area in flash memory
