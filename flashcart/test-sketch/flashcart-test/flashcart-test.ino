@@ -28,7 +28,6 @@
 #define ANIMATION_FRAMES 1454      /* number of 1K images in bin file  */
 #define ANIMATION_FPS 15
 
-
 #include <Arduboy2.h>
 #include "src/cart.h"
 
@@ -46,10 +45,10 @@ void printHexByte(uint8_t b)
 void showJedecID()
 { //Read flash chip ID and print it to screen
   Cart::enable();
-  Cart::write(SFC_JEDEC_ID);
-  jedecID.manufacturer = Cart::read();
-  jedecID.device = Cart::read();
-  jedecID.size = Cart::read();
+  Cart::writeByte(SFC_JEDEC_ID);
+  jedecID.manufacturer = Cart::readByte();
+  jedecID.device = Cart::readByte();
+  jedecID.size = Cart::readByte();
   Cart::disable();
   
   arduboy.clear();
@@ -62,22 +61,21 @@ void showJedecID()
   arduboy.setCursor(30,32+8);
   arduboy.print(F("STATUS:"));
   Cart::enable();
-  Cart::write(SFC_READSTATUS2);
-  printHexByte(Cart::read());
+  Cart::writeByte(SFC_READSTATUS2);
+  printHexByte(Cart::readByte());
   Cart::disable();
   
   Cart::enable();
-  Cart::write(SFC_READSTATUS1);
-  printHexByte(Cart::read());
+  Cart::writeByte(SFC_READSTATUS1);
+  printHexByte(Cart::readByte());
   Cart::disable();
 }
 
 void showFrames()
 {
   //loads 1K images from flash to display buffer  
-  Cart::readDataBlock((uint24_t)frames * 1024, arduboy.sBuffer, 1024);
+  Cart::readDataBytes((uint24_t)frames * 1024, arduboy.sBuffer, 1024);
   if (++frames == ANIMATION_FRAMES) frames = 0; //number of frames in animation
-  //uint16_t i = Cart::readUInt16();
 }
 
 void setup() {
