@@ -115,14 +115,6 @@ void Cart::seekSave(uint24_t address)
 }
 
 
-uint8_t readUnsafe()
-{
-  uint8_t result = SPDR;
-  SPDR = 0;
-  return result;
-}
-
-
 uint8_t Cart::readPendingUInt8()
 {
  #ifdef ARDUINO_ARCH_AVR

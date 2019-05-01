@@ -118,10 +118,17 @@ class Cart
 
     static void seekSave(uint24_t address); // selects flashaddress of program save area for reading and starts the first read
     
-    static inline uint8_t readUnsave() __attribute__((always_inline)) // read flash data without performing any checks and starts the next read.
+    static inline uint8_t readUnsafe() __attribute__((always_inline)) // read flash data without performing any checks and starts the next read.
     {
       uint8_t result = SPDR;
       SPDR = 0;
+      return result;
+    };
+
+    static inline uint8_t readUnsafeEnd() __attribute__((always_inline))
+    {
+      uint8_t result = SPDR;
+      disable();
       return result;
     };
     
