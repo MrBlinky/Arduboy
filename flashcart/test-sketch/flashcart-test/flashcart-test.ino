@@ -93,7 +93,7 @@ void setup() {
   arduboy.setCursor(30,56);
   arduboy.print(F("Mr. Blinky"));
     
-  disableOLED(); //OLED must be disabled before cart can be used. OLED display should only be enabled prior updating the display.
+  Cart::disableOLED(); //OLED must be disabled before cart can be used. OLED display should only be enabled prior updating the display.
   Cart::begin(ANIMATION_DATA_PAGE);  //cart may be in power down mode so wake it up (Cathy bootloader puts cart into powerdown mode)
                                      //and set the program data flash page for development / uploading through Arduino IDE
 }
@@ -117,7 +117,7 @@ void loop() {
 	  case 1 : showJedecID(); break;
 	  case 2 : showFrames(); break;
   }
-  enableOLED();// only enable OLED prior using display
+  Cart::enableOLED();// only enable OLED prior using display
   arduboy.display();
-  disableOLED();// disable so flash cart can be used
+  Cart::disableOLED();// disable so flash cart can be used
 }
