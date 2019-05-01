@@ -1,4 +1,3 @@
-#include <Arduboy2.h>
 #include "cart.h"
 
 uint16_t Cart::programDataPage; // program read only data location in flash memory
@@ -250,4 +249,95 @@ void Cart::writeSavePage(uint16_t page, uint8_t* buffer)
 
 void Cart::drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uint8_t mode)
 {
+  // read bitmap dimensions from flash
+  seekData(address); 
+  int16_t width  = readPendingUInt16();
+  int16_t height = readPendingUInt16();
+  readEnd();
+  // return if the bitmap is completely off screen
+  if (x + width <= 0 || x >= WIDTH || y + height <= 0 || y >= HEIGHT) return;
+  
+  // determine render width
+  int16_t skipleft = 0;
+  uint8_t renderwidth;
+  if (x<0)
+  {
+    skipleft = -x;
+    if (width - skipleft < WIDTH) renderwidth = width - skipleft;
+    else renderwidth = WIDTH;
+  }
+  else
+  {
+    if (x + width > WIDTH) renderwidth = WIDTH - x;
+    else renderwidth = width;
+  }
+  
+  //determine render height
+  int16_t skiptop;     // pixel to be skipped at the top
+  int8_t renderheight; // in pixels
+  if (y < 0) 
+  {
+    skiptop = -y & -8; // optimized -y / 8 * 8
+    if (height - skiptop <= HEIGHT) renderheight = height - skiptop;
+    else renderheight = HEIGHT + (y & 7);
+    skiptop >>= 3;//pixels to displayrows
+  }
+  else
+  {
+    skiptop = 0;
+    if (y + height > HEIGHT) renderheight = HEIGHT - y;
+    else renderheight = height;
+  }
+  uint24_t offset = (uint24_t)(frame * height + skiptop) * width + skipleft;
+  if (mode & dbmMasked)
+  {
+    offset += offset; // double for masked bitmaps
+    width += width;
+  } 
+  address += offset + 4; // skip non rendered pixels, width, height
+  int8_t displayrow = (y >> 3) + skiptop;
+  uint16_t displayoffset = displayrow * WIDTH + x + skipleft;
+  uint8_t yshift = 1 << (y & 7); //shift by multiply
+  do
+  {
+    seekData(address);
+    address += width;
+    uint16_t mask = 0xFF; 
+    if (renderheight < 8) mask = 0xFF >> (height & 7); // mask for bottommost pixels
+    mask *= yshift;
+    
+    for (uint8_t c = 0; c < renderwidth; c++)
+    {
+      uint16_t bitmap = readPendingUInt8();
+      if (mode & (dbmReverse | dbmBlack)) bitmap ^= 0xFF;
+      bitmap *= yshift;
+      if (mode & dbmMasked) mask = (uint16_t)readPendingUInt8() * yshift;
+      if (mode & (dbmWhite | dbmBlack)) mask = bitmap;
+      if (mode & dbmBlack) bitmap = 0;
+      uint8_t pixels, display;
+      if (displayrow >= 0)
+      {
+        pixels = bitmap;
+        display = Arduboy2Base::sBuffer[displayoffset];
+        if (!(mode & dbmInvert)) pixels ^= display;
+        pixels &= mask;
+        pixels ^= display;
+        Arduboy2Base::sBuffer[displayoffset] = pixels;
+      }
+      if (yshift > 1 && displayrow < (HEIGHT / 8 - 1))
+      {
+        display = Arduboy2Base::sBuffer[displayoffset + WIDTH];
+        pixels = bitmap >> 8;
+        if (!(mode & dbmInvert)) pixels ^= display;
+        pixels &= mask >> 8;
+        pixels ^= display;
+        Arduboy2Base::sBuffer[displayoffset + WIDTH] = pixels;
+      }
+      displayoffset++;
+    }
+    displayoffset += WIDTH - renderwidth;
+    displayrow ++;
+    renderheight -= 8;
+    readEnd();
+  } while (renderheight > 0);
 }

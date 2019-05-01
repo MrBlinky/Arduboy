@@ -3,6 +3,7 @@
 
 // Required for size_t
 #include <stddef.h>
+#include <Arduboy2.h>
 
 #ifndef CART_PORT
   #define CART_PORT PORTD
@@ -10,9 +11,6 @@
 #else
   #define USE_ARDUBOY2_SPITRANSFER
 #endif
-
-#define disableOLED() CS_PORT    |=  (1 << CS_BIT)
-#define enableOLED()  CS_PORT    &= ~(1 << CS_BIT)
 
 //sketch data and save cart space pages(set by PC manager tool)
 constexpr uint16_t CART_VECTOR_KEY  = 0x9518; /* RETI instruction used a magic key */
@@ -32,21 +30,32 @@ constexpr uint8_t SFC_ERASE             = 0x20;
 constexpr uint8_t SFC_RELEASE_POWERDOWN = 0xAB;
 constexpr uint8_t SFC_POWERDOWN         = 0xB9;
 
-//drawBitmap modes
-constexpr uint8_t dbmBlack   = 0; // black pixels in the bitmap will be black pixels on display.
-                                  // white pixels in the bitmap will not change pixels on display
-constexpr uint8_t dbmWhite   = 1; // white pixels in the bitmap will be white pixels on display.
-                                  // black pixels in the bitmap will not change pixels on display
-constexpr uint8_t dbmInvert  = 2; // pixels in the bitmap and on display will be added together.
-                                  // Pixels that are both black or both white in the bitmap and 
-                                  // on display  will turn black. Other combinations to white.
-constexpr uint8_t dbmReverse = 4; // White pixels in bitmap will turn to black pixels on display.
-                                  // Black pixels in bitmap will turn into white pixels on display.
-constexpr uint8_t dbmNormal  = 5; // White pixels in bitmap will be white pixels on display.
-                                  // Black pixels will be black pixels on display.
-constexpr uint8_t dbmMasked  = 8; // The bitmap contains a mask that will determine which black
-                                  // and white pixels of the bitmap will appear on display.
-
+//drawBitmap modes with same behaviour as Arduboy library drawBitmap modes
+constexpr uint8_t dbmBlack   = 0x04; // white pixels in bitmap will be drawn as black pixels on display
+                                     // black pixels in bitmap will not change pixels on display
+                                     // (same as sprites drawErase)
+                                     
+constexpr uint8_t dbmWhite   = 0x01; // white pixels in bitmap will be drawn as white pixels on display
+                                     // black pixels in bitmap will not change pixels on display
+                                     //(same as sprites drawSelfMasked)
+                                     
+constexpr uint8_t dbmInvert  = 0x02; // when a pixel in bitmap has a different color than on display the
+                                     // pixel on display will be drawn as white. In all other cases the
+                                     // pixel will be drawn as black
+//additional drawBitmap modes 
+constexpr uint8_t dbmNormal  = 0x00; // White pixels in bitmap will be drawn as white pixels on display
+                                     // Black pixels in bitmap will be drawn as black pixels on display
+                                     // (Same as sprites drawOverwrite)
+                                     
+constexpr uint8_t dbmReverse = 0x08; // White pixels in bitmap will be drawn as black pixels on display
+                                     // Black pixels in bitmap will be drawn as white pixels on display
+                                     
+constexpr uint8_t dbmMasked  = 0x10; // The bitmap contains a mask that will determine which pixels are
+                                     // drawn and which will remain 
+                                     // (same as sprites drawPlusMask)
+                                     
+// Note above modes may be combined like (dbmMasked | dbmReverse)
+                                     
 using uint24_t = __uint24;
 
 struct JedecID
@@ -65,6 +74,16 @@ struct CartAddress
 class Cart
 {
   public:
+    static inline void enableOLED() __attribute__((always_inline)) // selects external flash memory and allows new commands
+    {
+      CS_PORT &= ~(1 << CS_BIT);
+    };
+
+    static inline void disableOLED() __attribute__((always_inline)) // deselects external flash memory and ends the last command
+    {
+      CS_PORT |=  (1 << CS_BIT);
+    };
+    
     static inline void enable() __attribute__((always_inline)) // selects external flash memory and allows new commands
     {
       CART_PORT  &= ~(1 << CART_BIT);
@@ -93,11 +112,11 @@ class Cart
 
     static void writeEnable();// Puts flash memory in write mode, required prior to any write command
 
-    static void seekCommand(uint8_t command, uint24_t pageAddress);// Write command and selects flash memory address. Required by any read or write command
+    static void seekCommand(uint8_t command, uint24_t address);// Write command and selects flash memory address. Required by any read or write command
 
-    static void seekData(uint24_t pageAddress); // selects flashaddress of program data area for reading and starts the first read
+    static void seekData(uint24_t address); // selects flashaddress of program data area for reading and starts the first read
 
-    static void seekSave(uint24_t pageAddress); // selects flashaddress of program save area for reading and starts the first read
+    static void seekSave(uint24_t address); // selects flashaddress of program save area for reading and starts the first read
     
     static inline uint8_t readUnsave() __attribute__((always_inline)) // read flash data without performing any checks and starts the next read.
     {
@@ -118,15 +137,15 @@ class Cart
     
     static void readEnd();
 
-    static void readDataBytes(uint24_t pageAddress, uint8_t* buffer, size_t length);
+    static void readDataBytes(uint24_t address, uint8_t* buffer, size_t length);
 
-    static void readSaveBytes(uint24_t pageAddress, uint8_t* buffer, size_t length);
+    static void readSaveBytes(uint24_t address, uint8_t* buffer, size_t length);
 
     static void eraseSaveBlock(uint16_t page);
 
     static void writeSavePage(uint16_t page, uint8_t* buffer);
 
-    static void drawBitmap(int16_t x, int16_t y, uint24_t pageAddress, uint8_t frame, uint8_t mode);
+    static void drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uint8_t mode);
 
     static uint16_t programDataPage; // program read only data area in flash memory
     static uint16_t programSavePage; // program read and write data area in flash memory
