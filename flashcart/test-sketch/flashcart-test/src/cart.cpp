@@ -11,7 +11,7 @@ uint8_t Cart::writeByte(uint8_t data)
  #else
   SPDR = data;
   asm volatile("nop");
-  while ((SPSR & _BV(SPIF)) == 0);
+  wait();
   return SPDR;
  #endif
 }
@@ -103,14 +103,40 @@ void Cart::seekCommand(uint8_t command, uint24_t address)
 
 void Cart::seekData(uint24_t address)
 {
-  seekCommand(SFC_READ, ((uint24_t)programDataPage << 8) + address);
+ #ifdef ARDUINO_ARCH_AVR
+  asm volatile( // assembly optimizer for AVR platform
+    "lds  r0, %[page]+0 \n"
+    "add  %B[addr], r0  \n"
+    "lds  r0, %[page]+1 \n"
+    "adc  %C[addr], r0  \n"
+    :[addr] "+&r" (address)
+    :[page] ""    (&programDataPage)
+    :
+  );
+ #else // C++ version for non AVR platforms
+  address += (uint24_t)programDataPage << 8;
+ #endif
+  seekCommand(SFC_READ, address);
   SPDR = 0;
 }
 
 
 void Cart::seekSave(uint24_t address)
 {
-  seekCommand(SFC_READ, ((uint24_t)programSavePage << 8) + address);
+ #ifdef ARDUINO_ARCH_AVR
+  asm volatile( // assembly optimizer for AVR platform
+    "lds  r0, %[page]+0 \n"
+    "add  %B[addr], r0  \n"
+    "lds  r0, %[page]+1 \n"
+    "adc  %C[addr], r0  \n"
+    :[addr] "+&r" (address)
+    :[page] ""    (&programSavePage)
+    :"r24"
+  );
+ #else // C++ version for non AVR platforms
+  address += (uint24_t)programSavePage << 8;
+ #endif
+  seekCommand(SFC_READ, address);
   SPDR = 0;
 }
 
@@ -120,7 +146,7 @@ uint8_t Cart::readPendingUInt8()
  #ifdef ARDUINO_ARCH_AVR
   asm volatile("cart_cpp_readPendingUInt8:\n"); // create label for calls in Cart::readPendingUInt16
  #endif
-  while ((SPSR & _BV(SPIF)) == 0);
+  wait();
   uint8_t result = SPDR;
   SPDR = 0;
   return result;
@@ -197,10 +223,10 @@ void Cart::readBytes(uint8_t* buffer, size_t length)
   }
 }
 
-void Cart::readEnd()
+uint8_t Cart::readEnd()
 {
-  while ((SPSR & _BV(SPIF)) == 0); // wait for a pending read to complete
-  disable();
+  wait();                 // wait for a pending read to complete
+  return readUnsafeEnd(); // read last byte and disable flash
 }
 
 void Cart::readDataBytes(uint24_t address, uint8_t* buffer, size_t length)
@@ -297,20 +323,19 @@ void Cart::drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uin
     uint16_t mask = 0xFF; 
     if (renderheight < 8) mask = 0xFF >> (height & 7); // mask for bottommost pixels
     mask *= yshift;
-    
+    wait();
     for (uint8_t c = 0; c < renderwidth; c++)
     {
-      uint16_t bitmap = readPendingUInt8();
+      uint16_t bitmap = readUnsafe();
       if (mode & (dbmReverse | dbmBlack)) bitmap ^= 0xFF;
-      bitmap *= yshift;
-      if (mode & dbmMasked) mask = (uint16_t)readPendingUInt8() * yshift;
+      bitmap = (uint8_t)bitmap * yshift;
+      if (mode & dbmMasked) mask = (uint16_t)readUnsafe() * yshift;
       if (mode & (dbmWhite | dbmBlack)) mask = bitmap;
       if (mode & dbmBlack) bitmap = 0;
-      uint8_t pixels, display;
       if (displayrow >= 0)
       {
-        pixels = bitmap;
-        display = Arduboy2Base::sBuffer[displayoffset];
+        uint8_t pixels = bitmap;
+        uint8_t display = Arduboy2Base::sBuffer[displayoffset];
         if (!(mode & dbmInvert)) pixels ^= display;
         pixels &= mask;
         pixels ^= display;
@@ -318,8 +343,8 @@ void Cart::drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uin
       }
       if (yshift > 1 && displayrow < (HEIGHT / 8 - 1))
       {
-        display = Arduboy2Base::sBuffer[displayoffset + WIDTH];
-        pixels = bitmap >> 8;
+        uint8_t display = Arduboy2Base::sBuffer[displayoffset + WIDTH];
+        uint8_t pixels = bitmap >> 8;
         if (!(mode & dbmInvert)) pixels ^= display;
         pixels &= mask >> 8;
         pixels ^= display;

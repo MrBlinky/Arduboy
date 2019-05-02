@@ -74,12 +74,12 @@ struct CartAddress
 class Cart
 {
   public:
-    static inline void enableOLED() __attribute__((always_inline)) // selects external flash memory and allows new commands
+    static inline void enableOLED() __attribute__((always_inline)) // selects OLED display.
     {
       CS_PORT &= ~(1 << CS_BIT);
     };
 
-    static inline void disableOLED() __attribute__((always_inline)) // deselects external flash memory and ends the last command
+    static inline void disableOLED() __attribute__((always_inline)) // deselects OLED display.
     {
       CS_PORT |=  (1 << CS_BIT);
     };
@@ -94,7 +94,12 @@ class Cart
       CART_PORT  |=  (1 << CART_BIT);
     };
 
-    static uint8_t writeByte(uint8_t data);
+    static inline void wait() __attribute__((always_inline)) // wait for a pending flash transfer to complete
+    {
+      while ((SPSR & _BV(SPIF)) == 0);
+    }
+    
+    static uint8_t writeByte(uint8_t data); // write a single byte to flash memory.
 
     static uint8_t readByte(); //read a single byte from flash memory
 
@@ -127,9 +132,8 @@ class Cart
 
     static inline uint8_t readUnsafeEnd() __attribute__((always_inline))
     {
-      uint8_t result = SPDR;
       disable();
-      return result;
+      return SPDR;
     };
     
     static uint8_t readPendingUInt8() __attribute__ ((noinline));    //read a prefetched byte from the current flash location
@@ -142,7 +146,7 @@ class Cart
     
     static void readBytes(uint8_t* buffer, size_t length);// read a number of bytes from the current flash location
     
-    static void readEnd();
+    static uint8_t readEnd();
 
     static void readDataBytes(uint24_t address, uint8_t* buffer, size_t length);
 
