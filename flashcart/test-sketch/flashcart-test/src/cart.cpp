@@ -316,36 +316,45 @@ void Cart::drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uin
   int8_t displayrow = (y >> 3) + skiptop;
   uint16_t displayoffset = displayrow * WIDTH + x + skipleft;
   uint8_t yshift = 1 << (y & 7); //shift by multiply
+  uint8_t lastmask = 0xFF >> (height & 7); // mask for bottommost pixels
   do
   {
     seekData(address);
     address += width;
-    uint16_t mask = 0xFF; 
-    if (renderheight < 8) mask = 0xFF >> (height & 7); // mask for bottommost pixels
-    mask *= yshift;
+    mode &= ~(_BV(dbfExtraRow));
+    if (yshift != 1 && displayrow < (HEIGHT / 8 - 1)) mode |= _BV(dbfExtraRow);
+    uint8_t rowmask = 0xFF; 
+    if (renderheight < 8) rowmask = lastmask;
     wait();
     for (uint8_t c = 0; c < renderwidth; c++)
     {
-      uint16_t bitmap = readUnsafe();
-      if (mode & (dbmReverse | dbmBlack)) bitmap ^= 0xFF;
-      bitmap = (uint8_t)bitmap * yshift;
-      if (mode & dbmMasked) mask = (uint16_t)readUnsafe() * yshift;
-      if (mode & (dbmWhite | dbmBlack)) mask = bitmap;
-      if (mode & dbmBlack) bitmap = 0;
+      uint8_t bitmapbyte = readUnsafe();
+      if (mode & _BV(dbfReverseBlack)) bitmapbyte ^= 0xFF;
+      uint8_t maskbyte = rowmask;
+      if (mode & _BV(dbfWhiteBlack)) maskbyte = bitmapbyte;
+      if (mode & _BV(dbfBlack)) bitmapbyte = 0;
+      uint16_t bitmap = multiplyUInt8(bitmapbyte, yshift);
+      if (mode & _BV(dbfMasked))
+      {
+        wait();
+        uint8_t tmp = readUnsafe();
+        if ((mode & dbfWhiteBlack) == 0) maskbyte = tmp;
+      }
+      uint16_t mask = multiplyUInt8(maskbyte, yshift);
       if (displayrow >= 0)
       {
         uint8_t pixels = bitmap;
         uint8_t display = Arduboy2Base::sBuffer[displayoffset];
-        if (!(mode & dbmInvert)) pixels ^= display;
+        if ((mode & _BV(dbmInvert)) == 0) pixels ^= display;
         pixels &= mask;
         pixels ^= display;
         Arduboy2Base::sBuffer[displayoffset] = pixels;
       }
-      if (yshift > 1 && displayrow < (HEIGHT / 8 - 1))
+      if (mode & _BV(dbfExtraRow))
       {
         uint8_t display = Arduboy2Base::sBuffer[displayoffset + WIDTH];
         uint8_t pixels = bitmap >> 8;
-        if (!(mode & dbmInvert)) pixels ^= display;
+        if ((mode & dbmInvert) == 0) pixels ^= display;
         pixels &= mask >> 8;
         pixels ^= display;
         Arduboy2Base::sBuffer[displayoffset + WIDTH] = pixels;

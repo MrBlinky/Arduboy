@@ -30,29 +30,37 @@ constexpr uint8_t SFC_ERASE             = 0x20;
 constexpr uint8_t SFC_RELEASE_POWERDOWN = 0xAB;
 constexpr uint8_t SFC_POWERDOWN         = 0xB9;
 
+//drawbitmap bit flags (used by modes below and internally)
+constexpr uint8_t dbfWhiteBlack   = 0; // bitmap is used as mask
+constexpr uint8_t dbfInvert       = 1; // bitmap is exclusive or-ed with display
+constexpr uint8_t dbfBlack        = 2; // bitmap will be blackened
+constexpr uint8_t dbfReverseBlack = 3; // reverses bitmap data
+constexpr uint8_t dbfMasked       = 4; // bitmap contains mask data
+constexpr uint8_t dbfExtraRow     = 7; // ignored (internal use)
+
 //drawBitmap modes with same behaviour as Arduboy library drawBitmap modes
-constexpr uint8_t dbmBlack   = 0x04; // white pixels in bitmap will be drawn as black pixels on display
-                                     // black pixels in bitmap will not change pixels on display
-                                     // (same as sprites drawErase)
+constexpr uint8_t dbmBlack   = _BV(dbfReverseBlack) |   // white pixels in bitmap will be drawn as black pixels on display
+                               _BV(dbfBlack) |          // black pixels in bitmap will not change pixels on display
+                               _BV(dbfWhiteBlack);      // (same as sprites drawErase)
                                      
-constexpr uint8_t dbmWhite   = 0x01; // white pixels in bitmap will be drawn as white pixels on display
-                                     // black pixels in bitmap will not change pixels on display
-                                     //(same as sprites drawSelfMasked)
+constexpr uint8_t dbmWhite   = _BV(dbfWhiteBlack);      // white pixels in bitmap will be drawn as white pixels on display
+                                                        // black pixels in bitmap will not change pixels on display
+                                                        //(same as sprites drawSelfMasked)
                                      
-constexpr uint8_t dbmInvert  = 0x02; // when a pixel in bitmap has a different color than on display the
-                                     // pixel on display will be drawn as white. In all other cases the
-                                     // pixel will be drawn as black
+constexpr uint8_t dbmInvert  = _BV(dbfInvert);          // when a pixel in bitmap has a different color than on display the
+                                                        // pixel on display will be drawn as white. In all other cases the
+                                                        // pixel will be drawn as black
 //additional drawBitmap modes 
-constexpr uint8_t dbmNormal  = 0x00; // White pixels in bitmap will be drawn as white pixels on display
-                                     // Black pixels in bitmap will be drawn as black pixels on display
-                                     // (Same as sprites drawOverwrite)
+constexpr uint8_t dbmNormal     = 0;                    // White pixels in bitmap will be drawn as white pixels on display
+constexpr uint8_t dbmOverwrite  = 0;                    // Black pixels in bitmap will be drawn as black pixels on display
+                                                        // (Same as sprites drawOverwrite)
                                      
-constexpr uint8_t dbmReverse = 0x08; // White pixels in bitmap will be drawn as black pixels on display
-                                     // Black pixels in bitmap will be drawn as white pixels on display
+constexpr uint8_t dbmReverse = _BV(dbfReverseBlack);    // White pixels in bitmap will be drawn as black pixels on display
+                                                        // Black pixels in bitmap will be drawn as white pixels on display
                                      
-constexpr uint8_t dbmMasked  = 0x10; // The bitmap contains a mask that will determine which pixels are
-                                     // drawn and which will remain 
-                                     // (same as sprites drawPlusMask)
+constexpr uint8_t dbmMasked  = _BV(dbfMasked);          // The bitmap contains a mask that will determine which pixels are
+                                                        // drawn and which will remain 
+                                                        // (same as sprites drawPlusMask)
                                      
 // Note above modes may be combined like (dbmMasked | dbmReverse)
                                      
@@ -157,7 +165,26 @@ class Cart
     static void writeSavePage(uint16_t page, uint8_t* buffer);
 
     static void drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uint8_t mode);
-
+    
+    static inline uint16_t multiplyUInt8 (uint8_t a, uint8_t b) __attribute__((always_inline))
+    {
+     #ifdef ARDUINO_ARCH_AVR
+      uint16_t result;
+      asm volatile(
+        "mul    %[a], %[b]      \n"
+        "movw   %A[result], r0  \n"
+        "clr    r1              \n"
+        : [result] "=&r" (result)
+        : [a]      "r"   (a),
+          [b]      "r"   (b)
+        :
+      );
+      return result;
+     #else
+      return (a * b);   
+     #endif
+    }
+    
     static uint16_t programDataPage; // program read only data area in flash memory
     static uint16_t programSavePage; // program read and write data area in flash memory
 
