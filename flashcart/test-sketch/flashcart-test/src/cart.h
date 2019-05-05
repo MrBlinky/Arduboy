@@ -108,6 +108,19 @@ class Cart
     }
     
     static uint8_t writeByte(uint8_t data); // write a single byte to flash memory.
+    
+    static inline void writeByteBeforeWait(uint8_t data) __attribute__((always_inline))
+    {
+      SPDR = data;
+      asm volatile("nop\n");
+      wait();
+    }
+    
+    static inline void writeByteAfterWait(uint8_t data) __attribute__((always_inline))
+    {
+      wait();
+      SPDR = data;
+    }
 
     static uint8_t readByte(); //read a single byte from flash memory
 
@@ -185,8 +198,97 @@ class Cart
      #endif
     }
     
+    static inline uint8_t bitShiftLeftUInt8(uint8_t bit) __attribute__((always_inline)) //fast (1 << (bit & 7))
+    {
+     #ifdef ARDUINO_ARCH_AVR
+      uint8_t result;
+      asm volatile(
+        "ldi    %[result], 1    \n" // 0 = 000 => 0000 0001
+        "sbrc   %[bit], 1       \n" // 1 = 001 => 0000 0010
+        "ldi    %[result], 4    \n" // 2 = 010 => 0000 0100
+        "sbrc   %[bit], 0       \n" // 3 = 011 => 0000 1000
+        "lsl    %[result]       \n"  
+        "sbrc   %[bit], 2       \n" // 4 = 100 => 0001 0000
+        "swap   %[result]       \n" // 5 = 101 => 0010 0000
+        :[result] "=&d" (result)    // 6 = 110 => 0100 0000
+        :[bit]    "r"   (bit)       // 7 = 111 => 1000 0000
+        :
+      );
+      return result;
+     #else
+      return 1 << (bit & 7);
+     #endif
+    }
+
+    static inline uint8_t bitShiftRightUInt8(uint8_t bit) __attribute__((always_inline)) //fast (0x80 >> (bit & 7))
+    {
+     #ifdef ARDUINO_ARCH_AVR
+      uint8_t result;
+      asm volatile(
+        "ldi    %[result], 1    \n" // 0 = 000 => 1000 0000
+        "sbrs   %[bit], 1       \n" // 1 = 001 => 0100 0000
+        "ldi    %[result], 4    \n" // 2 = 010 => 0010 0000
+        "sbrs   %[bit], 0       \n" // 3 = 011 => 0001 0000
+        "lsl    %[result]       \n"  
+        "sbrs   %[bit], 2       \n" // 4 = 100 => 0000 1000
+        "swap   %[result]       \n" // 5 = 101 => 0000 0100
+        :[result] "=&d" (result)    // 6 = 110 => 0000 0010
+        :[bit]    "r"   (bit)       // 7 = 111 => 0000 0001
+        :
+      );
+      return result;
+     #else
+      return 0x80 >> (bit & 7);
+     #endif
+    }
+    
+    static inline uint8_t bitShiftLeftMaskUInt8(uint8_t bit) __attribute__((always_inline)) //fast (0xFF << (bit & 7) & 0xFF)
+    {
+     #ifdef ARDUINO_ARCH_AVR
+      uint8_t result;
+      asm volatile(
+        "ldi    %[result], 1    \n" // 0 = 000 => 1111 1111 = -1
+        "sbrc   %[bit], 1       \n" // 1 = 001 => 1111 1110 = -2
+        "ldi    %[result], 4    \n" // 2 = 010 => 1111 1100 = -4
+        "sbrc   %[bit], 0       \n" // 3 = 011 => 1111 1000 = -8
+        "lsl    %[result]       \n"  
+        "sbrc   %[bit], 2       \n" // 4 = 100 => 1111 0000 = -16
+        "swap   %[result]       \n" // 5 = 101 => 1110 0000 = -32
+        "neg    %[result]       \n" // 6 = 110 => 1100 0000 = -64
+        :[result] "=&d" (result)    // 7 = 111 => 1000 0000 = -128
+        :[bit]    "r"   (bit)       
+        :
+      );
+      return result;
+     #else
+      return (0xFF << (bit & 7)) & 0xFF;
+     #endif
+    }
+    
+    static inline uint8_t bitShiftRightMaskUInt8(uint8_t bit) __attribute__((always_inline)) //fast (0xFF >> (bit & 7))
+    {
+     #ifdef ARDUINO_ARCH_AVR
+      uint8_t result;
+      asm volatile(
+        "ldi    %[result], 2    \n" // 0 = 000 => 1111 1111 = 0x00 - 1 
+        "sbrs   %A[bit], 1      \n" // 1 = 001 => 0111 1111 = 0x80 - 1
+        "ldi    %[result], 8    \n" // 2 = 010 => 0011 1111 = 0x40 - 1
+        "sbrs   %A[bit], 2      \n" // 3 = 011 => 0001 1111 = 0x20 - 1
+        "swap   %[result]       \n"  
+        "sbrs   %A[bit], 0      \n" // 4 = 100 => 0000 1111 = 0x10 - 1
+        "lsl    %[result]       \n" // 5 = 101 => 0000 0111 = 0x08 - 1
+        "dec    %[result]       \n" // 6 = 110 => 0000 0011 = 0x04 - 1
+        :[result] "=&d" (result)    // 7 = 111 => 0000 0001 = 0x02 - 1
+        :[bit]    "r"   (bit)
+        :
+      );
+      return result;
+     #else
+      return 0xFF >> (bit & 7);
+     #endif
+    }
+    
     static uint16_t programDataPage; // program read only data area in flash memory
     static uint16_t programSavePage; // program read and write data area in flash memory
-
 };
 #endif
