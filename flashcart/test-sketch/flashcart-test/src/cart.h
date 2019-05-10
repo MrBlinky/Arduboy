@@ -130,6 +130,10 @@ class Cart
 
     static void begin(uint16_t datapage, uint16_t savepage); // Initializes flash memory. Use when program depends on both data and save data in flash memory
 
+    static bool detect(); //detect presence of initialized flash memory
+    
+    static void noCartReboot(); // flash RGB LED and wait for DOWN button to exit to bootloader when no initialized cart is present
+    
     static void writeCommand(uint8_t command); // write a single byte flash command
 
     static void wakeUp(); // Wake up flash memory from power down mode

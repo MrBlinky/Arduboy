@@ -1,4 +1,5 @@
 #include "cart.h"
+#include <wiring.c>
 
 uint16_t Cart::programDataPage; // program read only data location in flash memory
 uint16_t Cart::programSavePage; // program read and write data location in flash memory
@@ -38,6 +39,7 @@ void Cart::begin(uint16_t developmentDataPage)
     programDataPage = developmentDataPage;
   }
   wakeUp();
+  noCartReboot();
 }
 
 
@@ -60,7 +62,33 @@ void Cart::begin(uint16_t developmentDataPage, uint16_t developmentSavePage)
     programSavePage = developmentSavePage;
   }
   wakeUp();
+  noCartReboot();
 }
+
+
+bool Cart::detect()
+{
+  Cart::seekCommand(SFC_READ,0);
+  SPDR = 0;
+  bool result (readPendingUInt16() == 0x4152);
+  Cart::readEnd();
+  return result;
+}
+
+
+void Cart::noCartReboot()
+  {
+    if (!detect())
+    {
+      do
+      {
+        if (*(uint8_t *)&timer0_millis & 0x80) bitSet(PORTB, RED_LED_BIT);
+        else bitClear(PORTB, RED_LED_BIT);
+      } 
+      while (bitRead(DOWN_BUTTON_PORTIN, DOWN_BUTTON_BIT)); // wait for DOWN button to enter bootloader
+      Arduboy2Core::exitToBootloader();
+    }
+  }
 
 
 void Cart::writeCommand(uint8_t command)
