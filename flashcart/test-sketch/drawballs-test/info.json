@@ -1,0 +1,16 @@
+﻿{
+  "schemaVersion": 3,
+  "title": "Flashcart drawballs test",
+  "author": "Mr.Blinky",
+  "version": "1.0",
+  "date": "2019-05-12",
+  "genre": "demo",
+  "binaries": [
+    {
+      "title": "Flashcart draw 55 balls test 60fps",
+      "filename": "drawballs-test.hex",
+      "flashdata": "drawballs-test.bin",
+      "device": "ArduboyFX"
+    }
+  ]
+}
