@@ -58,8 +58,13 @@ void showJedecID()
   printHexByte(jedecID.device );
   printHexByte(jedecID.size);
 
-  arduboy.setCursor(30,32+8);
+  arduboy.setCursor(24,32+8);
   arduboy.print(F("STATUS:"));
+  Cart::enable();
+  Cart::writeByte(SFC_READSTATUS3);
+  printHexByte(Cart::readByte());
+  Cart::disable();
+  
   Cart::enable();
   Cart::writeByte(SFC_READSTATUS2);
   printHexByte(Cart::readByte());

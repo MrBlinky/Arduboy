@@ -23,6 +23,7 @@ constexpr uint16_t CART_SAVE_PAGE   = 0x001A;
 constexpr uint8_t SFC_JEDEC_ID  	    = 0x9F;
 constexpr uint8_t SFC_READSTATUS1       = 0x05;
 constexpr uint8_t SFC_READSTATUS2       = 0x35;
+constexpr uint8_t SFC_READSTATUS3       = 0x15;
 constexpr uint8_t SFC_READ              = 0x03;
 constexpr uint8_t SFC_WRITE_ENABLE      = 0x06;
 constexpr uint8_t SFC_WRITE             = 0x04;
