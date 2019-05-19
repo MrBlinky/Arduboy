@@ -27,6 +27,9 @@
 //datafile offsets
 constexpr uint24_t gfx1 = 0x000000;    // Background tiles
 constexpr uint24_t gfx2 = 0x000044;    // masked ball sprite
+constexpr uint8_t ballWidth = 16;
+constexpr uint8_t ballHeight = 16;
+
 constexpr uint24_t tilemap = 0x000088; // 16 x 16 tilemap
 constexpr uint8_t tilemapWidth = 16;   // width of a tilemap row
 constexpr uint8_t tileWidth  = 16;
@@ -132,6 +135,7 @@ struct Ball
 };
 
 Ball ball[MAX_BALLS];
+uint8_t ballsVisible = MAX_BALLS;
 
 uint8_t pos;
 
@@ -156,36 +160,41 @@ uint8_t tilemapBuffer[VISABLE_TILES_PER_ROW];
 
 void loop() {
   if (!arduboy.nextFrameDEV()) return;
+  
+  arduboy.pollButtons();
 
+  if ((arduboy.justPressed(A_BUTTON) && ballsVisible < MAX_BALLS)) ballsVisible++;
+  if ((arduboy.justPressed(B_BUTTON) && ballsVisible > 0)) ballsVisible--;
+  
   camera.x =16 + circlePoints[pos].x; // circle around a fixed point with radius 15
   camera.y =16 + circlePoints[pos].y;
   
   //draw tilemap
   for (int8_t y = 0; y < VISABLE_TILES_PER_COLUMN; y++)
   {
-    Cart::seekDataArray(tilemap, y + camera.y / 16, camera.x / 16, tilemapWidth); // locate tilemap data in external flash
+    Cart::seekDataArray(tilemap, y + camera.y / tileHeight, camera.x / tileWidth, tilemapWidth); // locate tilemap data in external flash
     Cart::readBytes(tilemapBuffer, VISABLE_TILES_PER_ROW); //reading a row of tiles is faster then reading individual tiles
     Cart::readEnd();
     for (int16_t x = 0; x < VISABLE_TILES_PER_ROW; x++)
     {
-      Cart::drawBitmap(x*16 - camera.x % 16 , y*16 - camera.y % 16 , gfx1, tilemapBuffer[x], dbmNormal); //draw a row of tiles
+      Cart::drawBitmap(x * tileWidth - camera.x % tileWidth , y * tileHeight - camera.y % tileHeight , gfx1, tilemapBuffer[x], dbmNormal); //draw a row of tiles
     }
   }
   pos = ++pos % CIRCLE_POINTS;
   
   //draw balls
-  for (uint8_t i=0; i < MAX_BALLS; i++)
+  for (uint8_t i=0; i < ballsVisible; i++)
     Cart::drawBitmap(ball[i].point.x, ball[i].point.y, gfx2, 0, dbmMasked);
 
   //update balls    
-  for (uint8_t i=0; i < MAX_BALLS; i++)
+  for (uint8_t i=0; i < ballsVisible; i++)
   {
     if (ball[i].xspeed > 0)
     {
       ball[i].point.x += ball[i].xspeed;
-      if (ball[i].point.x > 112)
+      if (ball[i].point.x > WIDTH - ballWidth)
       {
-        ball[i].point.x = 112;
+        ball[i].point.x = WIDTH - ballWidth;
         ball[i].xspeed = - ball[i].xspeed;
       }
     }
@@ -201,9 +210,9 @@ void loop() {
     if (ball[i].yspeed > 0)
     {
       ball[i].point.y += ball[i].yspeed;
-      if (ball[i].point.y > 56)
+      if (ball[i].point.y > HEIGHT - tileHeight)
       {
-        ball[i].point.y = 56;
+        ball[i].point.y = HEIGHT - tileHeight;
         ball[i].yspeed = - ball[i].yspeed;
       }
     }
@@ -222,4 +231,5 @@ void loop() {
   arduboy.display(CLEAR_BUFFER);
   Cart::disableOLED();// disable so flash cart can be used
 }
+
 
