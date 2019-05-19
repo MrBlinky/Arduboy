@@ -148,7 +148,7 @@ void Cart::seekData(uint24_t address)
 void Cart::seekDataArray(uint24_t address, uint8_t index, uint8_t offset, uint8_t size)
 {
  #ifdef ARDUINO_ARCH_AVR
-  asm volatile (
+  asm volatile ("dbg:\n"
     "   mul     %[index], %[size]   \n"
     "   brne    .+2                 \n" //treat size 0 as size 256
     "   mov     r1, %[index]        \n"

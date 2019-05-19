@@ -1,5 +1,5 @@
 /* *****************************************************************************
- * Flash cart draw balls test v1.0 by Mr.Blinky May 2019 licenced under MIT
+ * Flash cart draw balls test v1.1 by Mr.Blinky May 2019 licenced under MIT
  * *****************************************************************************
  * 
  * This test depend on file drawballs-test.bin being uploaded with the 
@@ -7,19 +7,30 @@
  * 
  * python flash-writer.py -d drawballs-test.bin
  * 
+ * This demo draws a moving background tilemap with a bunch of balls bouncing around
+ * 
+ * reduce the value of MAX_BALLS to see more of the moving background
+ * 
  */
 
 #include <Arduboy2.h>
 #include "src/cart.h"
 
-#define PROGRAM_DATA_PAGE 0xFFFF
+#define PROGRAM_DATA_PAGE 0xFFFE
 #define FRAME_RATE 60
 
 #define MAX_BALLS 55
 #define CIRCLE_POINTS 84
+#define VISABLE_TILES_PER_COLUMN 5
+#define VISABLE_TILES_PER_ROW 9
 
-constexpr uint24_t gfx1 = 0x000000; // Background tiles
-constexpr uint24_t gfx2 = 0x000044; // masked ball sprite
+//datafile offsets
+constexpr uint24_t gfx1 = 0x000000;    // Background tiles
+constexpr uint24_t gfx2 = 0x000044;    // masked ball sprite
+constexpr uint24_t tilemap = 0x000088; // 16 x 16 tilemap
+constexpr uint8_t tilemapWidth = 16;   // width of a tilemap row
+constexpr uint8_t tileWidth  = 16;
+constexpr uint8_t tileHeight = 16;
 
 Arduboy2 arduboy;
 
@@ -111,6 +122,8 @@ Point circlePoints[CIRCLE_POINTS] =
   Point(-14,-1)
 };
 
+Point camera;
+
 struct Ball 
 {
   Point point;
@@ -139,15 +152,25 @@ void setup() {
   }                                     
 }
 
+uint8_t tilemapBuffer[VISABLE_TILES_PER_ROW];
+
 void loop() {
   if (!arduboy.nextFrameDEV()) return;
+
+  camera.x =16 + circlePoints[pos].x; // circle around a fixed point with radius 15
+  camera.y =16 + circlePoints[pos].y;
   
-  //draw 60 moving background tiles
-  for (int8_t y = -1; y < 5;y++)
-    for (int16_t x = -1; x < 9;x++)
+  //draw tilemap
+  for (int8_t y = 0; y < VISABLE_TILES_PER_COLUMN; y++)
+  {
+    Cart::seekDataArray(tilemap, y + camera.y / 16, camera.x / 16, tilemapWidth); // locate tilemap data in external flash
+    Cart::readBytes(tilemapBuffer, VISABLE_TILES_PER_ROW); //reading a row of tiles is faster then reading individual tiles
+    Cart::readEnd();
+    for (int16_t x = 0; x < VISABLE_TILES_PER_ROW; x++)
     {
-      Cart::drawBitmap(x*16 + circlePoints[pos].x , y*16 + circlePoints[pos].y, gfx1, (x^y) & 1, dbmNormal);
+      Cart::drawBitmap(x*16 - camera.x % 16 , y*16 - camera.y % 16 , gfx1, tilemapBuffer[x], dbmNormal); //draw a row of tiles
     }
+  }
   pos = ++pos % CIRCLE_POINTS;
   
   //draw balls
