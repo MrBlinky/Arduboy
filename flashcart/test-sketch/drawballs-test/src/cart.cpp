@@ -372,16 +372,14 @@ uint8_t Cart::readEnd()
 void Cart::readDataBytes(uint24_t address, uint8_t* buffer, size_t length)
 {
   seekData(address);
-  readBytes(buffer, length);
-  disable();
+  readBytesEnd(buffer, length);
 }
 
 
 void Cart::readSaveBytes(uint24_t address, uint8_t* buffer, size_t length)
 {
   seekSave(address);
-  readBytes(buffer, length);
-  disable();
+  readBytesEnd(buffer, length);
 }
 
 
@@ -446,7 +444,7 @@ void Cart::drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uin
     if (y + height > HEIGHT) renderheight = HEIGHT - y;
     else renderheight = height;
   }
-  uint24_t offset = (uint24_t)(frame * (height+7) / 8 + skiptop) * width + skipleft;
+  uint24_t offset = (uint24_t)(frame * ((height+7) / 8) + skiptop) * width + skipleft;
   if (mode & dbmMasked)
   {
     offset += offset; // double for masked bitmaps
