@@ -147,7 +147,7 @@ class Cart
 
     static void seekData(uint24_t address); // selects flashaddress of program data area for reading and starts the first read
     
-    static void seekDataArray(uint24_t address, uint8_t index, uint8_t offset, uint8_t size);
+    static void seekDataArray(uint24_t address, uint8_t index, uint8_t offset, uint8_t elementSize);
 
     static void seekSave(uint24_t address); // selects flashaddress of program save area for reading and starts the first read
     
@@ -183,7 +183,9 @@ class Cart
     
     static void readBytes(uint8_t* buffer, size_t length);// read a number of bytes from the current flash location
     
-    static uint8_t readEnd();
+    static void readBytesEnd(uint8_t* buffer, size_t length); // read a number of bytes from the current flash location and end the read command
+    
+    static uint8_t readEnd(); //read last pending byte and end read command
 
     static void readDataBytes(uint24_t address, uint8_t* buffer, size_t length);
 
@@ -195,13 +197,15 @@ class Cart
 
     static void drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uint8_t mode);
     
-    static uint16_t getIndexedUInt8(uint24_t address, uint8_t index);
+    static void readDataArray(uint24_t address, uint8_t index, uint8_t offset, uint8_t elementSize, uint8_t* buffer, size_t length);
     
-    static uint16_t getIndexedUInt16(uint24_t address, uint8_t index);
+    static uint16_t readIndexedUInt8(uint24_t address, uint8_t index);
     
-    static uint24_t getIndexedUInt24(uint24_t address, uint8_t index);
+    static uint16_t readIndexedUInt16(uint24_t address, uint8_t index);
     
-    static uint32_t getIndexedUInt32(uint24_t address, uint8_t index);
+    static uint24_t readIndexedUInt24(uint24_t address, uint8_t index);
+    
+    static uint32_t readIndexedUInt32(uint24_t address, uint8_t index);
     
     static inline uint16_t multiplyUInt8 (uint8_t a, uint8_t b) __attribute__((always_inline))
     {

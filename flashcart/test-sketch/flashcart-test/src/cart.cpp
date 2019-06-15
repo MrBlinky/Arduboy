@@ -145,7 +145,7 @@ void Cart::seekData(uint24_t address)
 }
 
 
-void Cart::seekDataArray(uint24_t address, uint8_t index, uint8_t offset, uint8_t size)
+void Cart::seekDataArray(uint24_t address, uint8_t index, uint8_t offset, uint8_t elementSize)
 {
  #ifdef ARDUINO_ARCH_AVR
   asm volatile (
@@ -162,7 +162,7 @@ void Cart::seekDataArray(uint24_t address, uint8_t index, uint8_t offset, uint8_
     : [address] "+r" (address)
     : [index]   "r"  (index),
       [offset]  "r"  (offset),
-      [size]    "r"  (size)
+      [size]    "r"  (elementSize)
     : "r24"
   );
   #else
@@ -346,25 +346,40 @@ void Cart::readBytes(uint8_t* buffer, size_t length)
   }
 }
 
+
+void Cart::readBytesEnd(uint8_t* buffer, size_t length)
+{
+  for (size_t i = 0; i <= length; i++)
+  {
+    if ((i+1) != length)
+    buffer[i] = readPendingUInt8();
+    else
+    {
+      buffer[i] = readEnd();
+      break;
+    }
+  }
+}
+
+
 uint8_t Cart::readEnd()
 {
   wait();                 // wait for a pending read to complete
   return readUnsafeEnd(); // read last byte and disable flash
 }
 
+
 void Cart::readDataBytes(uint24_t address, uint8_t* buffer, size_t length)
 {
   seekData(address);
-  readBytes(buffer, length);
-  disable();
+  readBytesEnd(buffer, length);
 }
 
 
 void Cart::readSaveBytes(uint24_t address, uint8_t* buffer, size_t length)
 {
   seekSave(address);
-  readBytes(buffer, length);
-  disable();
+  readBytesEnd(buffer, length);
 }
 
 
@@ -429,7 +444,7 @@ void Cart::drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uin
     if (y + height > HEIGHT) renderheight = HEIGHT - y;
     else renderheight = height;
   }
-  uint24_t offset = (uint24_t)(frame * (height+7) / 8 + skiptop) * width + skipleft;
+  uint24_t offset = (uint24_t)(frame * ((height+7) / 8) + skiptop) * width + skipleft;
   if (mode & dbmMasked)
   {
     offset += offset; // double for masked bitmaps
@@ -646,28 +661,35 @@ void Cart::drawBitmap(int16_t x, int16_t y, uint24_t address, uint8_t frame, uin
 }
 
 
-uint16_t Cart::getIndexedUInt8(uint24_t address, uint8_t index)
+void Cart::readDataArray(uint24_t address, uint8_t index, uint8_t offset, uint8_t elementSize, uint8_t* buffer, size_t length)
+{
+  seekDataArray(address, index, offset, elementSize);
+  readBytesEnd(buffer, length);
+}
+
+
+uint16_t Cart::readIndexedUInt8(uint24_t address, uint8_t index)
 {
   seekDataArray(address, index, 0, sizeof(uint8_t));
   return readEnd();
 }
 
 
-uint16_t Cart::getIndexedUInt16(uint24_t address, uint8_t index)
+uint16_t Cart::readIndexedUInt16(uint24_t address, uint8_t index)
 {
   seekDataArray(address, index, 0, sizeof(uint16_t));
   return readPendingLastUInt16();
 }
 
 
-uint24_t Cart::getIndexedUInt24(uint24_t address, uint8_t index)
+uint24_t Cart::readIndexedUInt24(uint24_t address, uint8_t index)
 {
   seekDataArray(address, index, 0, sizeof(uint24_t));
   return readPendingLastUInt24();
 }
 
 
-uint32_t Cart::getIndexedUInt32(uint24_t address, uint8_t index)
+uint32_t Cart::readIndexedUInt32(uint24_t address, uint8_t index)
 {
   seekDataArray(address, index, 0, sizeof(uint24_t));
   return readPendingLastUInt32();
