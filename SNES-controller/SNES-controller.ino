@@ -1,4 +1,4 @@
-/* Quick and dirty (S)NES to Arduboy button driver v1.1 by Mr.Blinky April,May 2018
+/* Quick and dirty (S)NES to Arduboy button driver v1.2 by Mr.Blinky Apr 2018-Jul 2020
  *
  * Using digital pins so it can be easily run on any Arduino
  * Because DigitalRead and DigitalWrite are pretty slow, no delays are
@@ -51,8 +51,8 @@
 //controller buttons to Arduboy buttons mappings
 #define CONTROLLER_B        BS_A
 #define CONTROLLER_Y        BS_B
-#define CONTROLLER_SELECT   (BS_A | BS_B | BS_UP | BS_LEFT)
-#define CONTROLLER_START    (BS_A | BS_B | BS_DOWN | BS_RIGHT)
+#define CONTROLLER_SELECT   (BS_UP | BS_DOWN)
+#define CONTROLLER_START    (BS_LEFT| BS_RIGHT)
 #define CONTROLLER_UP       BS_UP
 #define CONTROLLER_DOWN     BS_DOWN
 #define CONTROLLER_LEFT     BS_LEFT
