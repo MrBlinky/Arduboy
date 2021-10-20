@@ -69,6 +69,8 @@ void flashPage(const uint8_t *dataInRam, uint16_t targetAddress)
   
 ## Cathy3K 
 
+Note this version is is an older **discontinued** version. The most recent version can be found in the [cathy3k reposity](https://github.com/MrBlinky/cathy3k)
+
 An optimized reversed Caterina bootloader in assembly  with added features
 under 3K for Arduboy and Arduino Leonardo, Micro and Esplora.
 
